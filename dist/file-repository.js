@@ -71,5 +71,28 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
             const state = await readState();
             await write({ ...state, categoryOrder: normalizeKaomojiCategoryOrder(categories) });
         },
+        async mergeCatalog(entries) {
+            const state = await readState();
+            const removed = new Set(state.removed.map(normalizeKaomoji));
+            const existing = new Set(state.items.map((item) => normalizeKaomoji(item.value)));
+            const additions = [];
+            for (const entry of entries) {
+                const value = normalizeKaomoji(entry.value);
+                if (!value || removed.has(value) || existing.has(value))
+                    continue;
+                const categories = normalizeKaomojiCategories(entry.categories);
+                additions.push({
+                    ...analyzeKaomoji(value, categories),
+                    label: entry.label?.trim() || undefined,
+                    categories,
+                    favorite: false,
+                    useCount: 0,
+                });
+                existing.add(value);
+            }
+            if (additions.length)
+                await write({ ...state, items: [...additions, ...state.items] });
+            return { added: additions.length, skipped: entries.length - additions.length };
+        },
     };
 }

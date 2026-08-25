@@ -1,5 +1,5 @@
 import { defaultKaomojiEntries } from "./default-library.js";
-import type { KaomojiItem, KaomojiRepository } from "./types.js";
+import type { KaomojiCatalogEntry, KaomojiItem, KaomojiRepository } from "./types.js";
 
 const transportControls = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
 const riskyScripts = /[\u0980-\u0dff\u0f00-\u0fff\u1000-\u109f\u1780-\u17ff]/u;
@@ -179,6 +179,27 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1"): K
     async setCategoryOrder(categories) {
       const state = readState();
       write({ ...state, categoryOrder: normalizeKaomojiCategoryOrder(categories) });
+    },
+    async mergeCatalog(entries: KaomojiCatalogEntry[]) {
+      const state = readState();
+      const removed = new Set(state.removed.map(normalizeKaomoji));
+      const existing = new Set(state.items.map((item) => normalizeKaomoji(item.value)));
+      const additions: KaomojiItem[] = [];
+      for (const entry of entries) {
+        const value = normalizeKaomoji(entry.value);
+        if (!value || removed.has(value) || existing.has(value)) continue;
+        const categories = normalizeKaomojiCategories(entry.categories);
+        additions.push({
+          ...analyzeKaomoji(value, categories),
+          label: entry.label?.trim() || undefined,
+          categories,
+          favorite: false,
+          useCount: 0,
+        });
+        existing.add(value);
+      }
+      if (additions.length) write({ ...state, items: [...additions, ...state.items] });
+      return { added: additions.length, skipped: entries.length - additions.length };
     },
   };
 }

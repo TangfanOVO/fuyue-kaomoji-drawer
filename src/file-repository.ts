@@ -3,7 +3,7 @@ import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { analyzeKaomoji, decodeKaomojiState, hydrateKaomojiState, normalizeKaomoji, normalizeKaomojiCategories, normalizeKaomojiCategoryOrder } from "./repository.js";
 import type { StoredKaomojiState } from "./repository.js";
-import type { KaomojiItem, KaomojiRepository } from "./types.js";
+import type { KaomojiCatalogEntry, KaomojiItem, KaomojiRepository } from "./types.js";
 
 export function defaultKaomojiPath() {
   return resolve(process.env.FUYUE_KAOMOJI_PATH || resolve(homedir(), ".fuyue-kaomoji", "kaomoji.json"));
@@ -77,6 +77,27 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()): Ka
     async setCategoryOrder(categories) {
       const state = await readState();
       await write({ ...state, categoryOrder: normalizeKaomojiCategoryOrder(categories) });
+    },
+    async mergeCatalog(entries: KaomojiCatalogEntry[]) {
+      const state = await readState();
+      const removed = new Set(state.removed.map(normalizeKaomoji));
+      const existing = new Set(state.items.map((item) => normalizeKaomoji(item.value)));
+      const additions: KaomojiItem[] = [];
+      for (const entry of entries) {
+        const value = normalizeKaomoji(entry.value);
+        if (!value || removed.has(value) || existing.has(value)) continue;
+        const categories = normalizeKaomojiCategories(entry.categories);
+        additions.push({
+          ...analyzeKaomoji(value, categories),
+          label: entry.label?.trim() || undefined,
+          categories,
+          favorite: false,
+          useCount: 0,
+        });
+        existing.add(value);
+      }
+      if (additions.length) await write({ ...state, items: [...additions, ...state.items] });
+      return { added: additions.length, skipped: entries.length - additions.length };
     },
   };
 }

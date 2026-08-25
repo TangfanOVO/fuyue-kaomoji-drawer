@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
 ```
 
 ## React integration
@@ -42,6 +42,28 @@ const repository = createLocalKaomojiRepository();
 
 The drawer never exposes `useCount` in the UI. Every selection increments it locally so frequently used entries naturally move toward the top.
 
+## Curated library subscription
+
+The package only needs to be installed once. Under **Manage → Curated library**, people can choose:
+
+- **Automatic**: check at most once per day when the drawer opens;
+- **Manual only** (default): connect only after pressing **Sync now**;
+- **Off**: never check the remote catalog.
+
+Sync only appends newly reviewed public entries. It preserves favourites, use counts, manual categories, category order, and local deletions. Personal data stays in the caller's own `KaomojiRepository`; the remote feed contains versioned public content only.
+
+Use a private mirror or a different curated feed by replacing the manifest URL:
+
+```tsx
+<KaomojiDrawer
+  repository={repository}
+  catalog={{ manifestUrl: "https://example.com/kaomoji/manifest.json" }}
+  onInsert={insert}
+/>
+```
+
+Pass `catalog={false}` to remove the sync controls entirely. The public contract is documented by [`catalog/manifest.json`](./catalog/manifest.json).
+
 ## Optional MCP for AI clients
 
 The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives the selected kaomoji, and includes it in its own response. The local usage count is updated at the same time.
@@ -49,7 +71,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -71,7 +93,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0"]
     }
   }
 }
@@ -100,7 +122,7 @@ React drawer ── KaomojiRepository ── shared REST/SQLite/JSON bridge
                                       └── MCP tools
 ```
 
-No public sync account is required or bundled.
+No public sync account is required or bundled. The curated feed contains public content only; private favourites, frequency, and shared state remain inside the host application.
 
 ## Custom data source
 

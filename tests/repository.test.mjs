@@ -7,7 +7,7 @@ import test from "node:test";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createFileKaomojiRepository } from "../dist/file-repository.js";
-import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, selectDiverseKaomoji, splitKaomojiCategories } from "../dist/index.js";
+import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, readKaomojiCatalogSyncState, selectDiverseKaomoji, shouldAutomaticallySync, splitKaomojiCategories, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "../dist/index.js";
 
 test("normalizes transport-only controls without changing the visible face", () => {
   assert.equal(normalizeKaomoji("\u200e( ´▽｀)\ufeff"), "( ´▽｀)");
@@ -78,6 +78,51 @@ test("ships a non-empty reviewed library and merges duplicate category tags", ()
   assert.equal(items.length, 325);
   assert.ok(items.some((item) => item.categories.length > 1));
   assert.equal(new Set(items.map((item) => item.value)).size, items.length);
+});
+
+test("keeps catalog sync opt-in and remembers the chosen mode", () => {
+  const values = new Map();
+  globalThis.window = {
+    localStorage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    },
+  };
+  assert.equal(readKaomojiCatalogSyncState("test.catalog").mode, "manual");
+  writeKaomojiCatalogSyncState({ mode: "automatic", lastCheckedAt: "2026-08-20T00:00:00.000Z" }, "test.catalog");
+  const state = readKaomojiCatalogSyncState("test.catalog");
+  assert.equal(state.mode, "automatic");
+  assert.equal(shouldAutomaticallySync(state, { checkIntervalMs: 1000 }, Date.parse("2026-08-20T00:00:02.000Z")), true);
+});
+
+test("syncs a reviewed catalog without restoring a locally removed face", async () => {
+  const values = new Map();
+  globalThis.window = {
+    localStorage: {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, value),
+    },
+  };
+  const repository = createLocalKaomojiRepository("test.catalog.merge");
+  await repository.remove("(remote-one)");
+  const fetcher = async (url) => new Response(JSON.stringify(String(url).endsWith("manifest.json") ? {
+    schemaVersion: 1,
+    libraryVersion: "test-1",
+    generatedAt: "2026-08-25T00:00:00.000Z",
+    itemCount: 2,
+    itemsUrl: "./kaomoji.json",
+  } : [
+    { value: "(remote-one)", categories: ["开心"] },
+    { value: "(remote-two)", categories: ["开心", "猫猫"] },
+  ]), { status: 200, headers: { "content-type": "application/json" } });
+  const result = await syncKaomojiCatalog(repository, {
+    manifestUrl: "https://example.com/catalog/manifest.json",
+    fetcher,
+  });
+  assert.equal(result.added, 1);
+  const items = await repository.list();
+  assert.equal(items.some((item) => item.value === "(remote-one)"), false);
+  assert.deepEqual(items.find((item) => item.value === "(remote-two)")?.categories, ["开心", "猫猫"]);
 });
 
 test("persists a private file library atomically", async (context) => {

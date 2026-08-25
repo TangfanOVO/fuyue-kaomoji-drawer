@@ -1,19 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { readKaomojiCatalogSyncState, shouldAutomaticallySync, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "./catalog-sync.js";
 import { rankKaomojiCategories } from "./repository.js";
-import type { KaomojiAcceptedVersion, KaomojiCandidate, KaomojiItem, KaomojiRepository, KaomojiReviewRepository } from "./types.js";
+import type { KaomojiAcceptedVersion, KaomojiCandidate, KaomojiCatalogOptions, KaomojiCatalogSyncMode, KaomojiCatalogSyncState, KaomojiItem, KaomojiRepository, KaomojiReviewRepository } from "./types.js";
 
 type KaomojiDrawerProps = {
   repository: KaomojiRepository;
   reviewRepository?: KaomojiReviewRepository;
   onInsert: (value: string) => void;
   title?: string;
+  catalog?: KaomojiCatalogOptions | false;
 };
 
 export function splitKaomojiCategories(value: string) {
   return [...new Set(value.split(/[,，、/]+/).map((part) => part.trim()).filter(Boolean))].slice(0, 8);
 }
 
-export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = "颜文字库" }: KaomojiDrawerProps) {
+export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = "颜文字库", catalog = {} }: KaomojiDrawerProps) {
   const [items, setItems] = useState<KaomojiItem[]>([]);
   const [candidates, setCandidates] = useState<KaomojiCandidate[]>([]);
   const [candidateCategories, setCandidateCategories] = useState<Record<string, string>>({});
@@ -26,6 +28,12 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
   const [newCategories, setNewCategories] = useState("可爱");
   const [categoryOrder, setCategoryOrder] = useState<string[]>([]);
   const [draggedCategory, setDraggedCategory] = useState("");
+  const catalogOptions = useMemo(() => catalog || {}, [catalog]);
+  const catalogStorageKey = catalogOptions.stateStorageKey;
+  const [catalogState, setCatalogState] = useState<KaomojiCatalogSyncState>(() => readKaomojiCatalogSyncState(catalogStorageKey));
+  const [catalogBusy, setCatalogBusy] = useState(false);
+  const [catalogMessage, setCatalogMessage] = useState("");
+  const [catalogError, setCatalogError] = useState("");
 
   const refresh = () => repository.list().then(setItems);
   const refreshCandidates = () => reviewRepository?.listCandidates().then((next) => {
@@ -37,6 +45,47 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
     void repository.getCategoryOrder?.().then(setCategoryOrder);
   }, [repository]);
   useEffect(() => { void refreshCandidates(); }, [reviewRepository]);
+
+  const runCatalogSync = useCallback(async () => {
+    if (catalog === false || catalogBusy) return;
+    setCatalogBusy(true);
+    setCatalogError("");
+    setCatalogMessage("");
+    const checkedAt = new Date().toISOString();
+    try {
+      const result = await syncKaomojiCatalog(repository, catalogOptions);
+      const next: KaomojiCatalogSyncState = {
+        ...catalogState,
+        lastCheckedAt: checkedAt,
+        lastSyncedAt: checkedAt,
+        libraryVersion: result.manifest.libraryVersion,
+        lastAdded: result.added,
+      };
+      setCatalogState(next);
+      writeKaomojiCatalogSyncState(next, catalogStorageKey);
+      setCatalogMessage(result.added ? `收进 ${result.added} 枚新颜文字` : "已经是最新的啦");
+      await refresh();
+    } catch (error) {
+      const next = { ...catalogState, lastCheckedAt: checkedAt };
+      setCatalogState(next);
+      writeKaomojiCatalogSyncState(next, catalogStorageKey);
+      setCatalogError(error instanceof Error ? error.message : "同步失败，请稍后再试");
+    } finally {
+      setCatalogBusy(false);
+    }
+  }, [catalog, catalogBusy, catalogOptions, catalogState, catalogStorageKey, repository]);
+
+  useEffect(() => {
+    if (catalog !== false && shouldAutomaticallySync(catalogState, catalogOptions)) void runCatalogSync();
+  }, [catalog, catalogOptions, catalogState, runCatalogSync]);
+
+  const setCatalogMode = (mode: KaomojiCatalogSyncMode) => {
+    const next = { ...catalogState, mode };
+    setCatalogState(next);
+    writeKaomojiCatalogSyncState(next, catalogStorageKey);
+    setCatalogMessage(mode === "automatic" ? "以后会静静检查新内容" : mode === "manual" ? "只在你点同步时更新" : "已关闭精选库同步");
+    setCatalogError("");
+  };
 
   const categories = useMemo(() => rankKaomojiCategories(items, categoryOrder), [categoryOrder, items]);
   const visible = items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase()))));
@@ -90,7 +139,16 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
       <button className={manageView === "library" ? "current" : ""} onClick={() => setManageView("library")} role="tab">我的库</button>
       <button className={manageView === "review" ? "current" : ""} onClick={() => setManageView("review")} role="tab">候选箱{candidates.length ? ` ${candidates.length}` : ""}</button>
     </div>}
-    {managing && manageView === "library" && <><div className="fy-kaomoji-add"><input value={newValue} onChange={(event) => setNewValue(event.target.value)} placeholder="粘贴一枚颜文字"/><input value={newCategories} onChange={(event) => setNewCategories(event.target.value)} placeholder="分类，可填多个"/><button onClick={() => void save()}>收进来</button></div>{repository.setCategoryOrder && <details className="fy-kaomoji-order"><summary><span><b>分类顺序</b><small>拖动，或用箭头手动排</small></span><i>⌔</i></summary><div>{categories.map((value, index) => <p className={draggedCategory === value ? "dragging" : ""} draggable key={value} onDragStart={() => setDraggedCategory(value)} onDragEnd={() => setDraggedCategory("")} onDragOver={(event) => event.preventDefault()} onDrop={() => dropCategory(value)}><i>⠇</i><span>{value}</span><button disabled={index === 0} onClick={() => moveCategory(value, -1)} aria-label={`上移${value}`}>↑</button><button disabled={index === categories.length - 1} onClick={() => moveCategory(value, 1)} aria-label={`下移${value}`}>↓</button></p>)}</div><button className="fy-kaomoji-order-reset" disabled={!categoryOrder.length} onClick={() => void saveCategoryOrder([])}>恢复智能顺序</button></details>}</>}
+    {managing && manageView === "library" && <><div className="fy-kaomoji-add"><input value={newValue} onChange={(event) => setNewValue(event.target.value)} placeholder="粘贴一枚颜文字"/><input value={newCategories} onChange={(event) => setNewCategories(event.target.value)} placeholder="分类，可填多个"/><button onClick={() => void save()}>收进来</button></div>{catalog !== false && <section className="fy-kaomoji-sync" aria-label="精选库同步">
+      <div><b>精选库</b><small>{catalogState.libraryVersion ? `当前 ${catalogState.libraryVersion}` : "审核过的新内容，不重装也能收进来"}</small></div>
+      <div className="fy-kaomoji-sync-modes" role="group" aria-label="同步方式">
+        <button className={catalogState.mode === "automatic" ? "current" : ""} onClick={() => setCatalogMode("automatic")}>自动同步</button>
+        <button className={catalogState.mode === "manual" ? "current" : ""} onClick={() => setCatalogMode("manual")}>仅手动</button>
+        <button className={catalogState.mode === "off" ? "current" : ""} onClick={() => setCatalogMode("off")}>关闭</button>
+      </div>
+      <button className="fy-kaomoji-sync-now" disabled={catalogBusy || catalogState.mode === "off"} onClick={() => void runCatalogSync()}>{catalogBusy ? "正在同步…" : "立即同步"}</button>
+      {(catalogMessage || catalogError) && <p className={catalogError ? "error" : ""} role={catalogError ? "alert" : "status"}>{catalogError || catalogMessage}</p>}
+    </section>}{repository.setCategoryOrder && <details className="fy-kaomoji-order"><summary><span><b>分类顺序</b><small>拖动，或用箭头手动排</small></span><i>⌔</i></summary><div>{categories.map((value, index) => <p className={draggedCategory === value ? "dragging" : ""} draggable key={value} onDragStart={() => setDraggedCategory(value)} onDragEnd={() => setDraggedCategory("")} onDragOver={(event) => event.preventDefault()} onDrop={() => dropCategory(value)}><i>⠇</i><span>{value}</span><button disabled={index === 0} onClick={() => moveCategory(value, -1)} aria-label={`上移${value}`}>↑</button><button disabled={index === categories.length - 1} onClick={() => moveCategory(value, 1)} aria-label={`下移${value}`}>↓</button></p>)}</div><button className="fy-kaomoji-order-reset" disabled={!categoryOrder.length} onClick={() => void saveCategoryOrder([])}>恢复智能顺序</button></details>}</>}
     {managing && manageView === "review" && reviewRepository ? <div className="fy-kaomoji-review">
       {candidates.length ? candidates.map((candidate) => {
         const key = String(candidate.id);

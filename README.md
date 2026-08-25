@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 也可以固定到发布版本：
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
 ```
 
 ## React 接入
@@ -42,6 +42,28 @@ const repository = createLocalKaomojiRepository();
 
 组件不会显示 `useCount`，但每次选用都会在本地累计，并把常用项自然排到前面。
 
+## 精选库订阅
+
+安装一次以后，不必为了新增颜文字反复升级整包。打开「整理 → 精选库」即可选择：
+
+- **自动同步**：打开抽屉时至多每天检查一次；
+- **仅手动**（默认）：只有点「立即同步」才联网；
+- **关闭**：完全不检查远端精选库。
+
+同步只会追加公开仓库里已经审核过的新条目。它不会覆盖收藏、使用次数、手动分类与分类顺序，也不会把用户删掉的颜文字重新塞回来。个人数据始终留在调用方自己的 `KaomojiRepository`；远端只提供版本化公共内容。
+
+需要私有镜像或自己的精选源时，可以替换清单地址：
+
+```tsx
+<KaomojiDrawer
+  repository={repository}
+  catalog={{ manifestUrl: "https://example.com/kaomoji/manifest.json" }}
+  onInsert={insert}
+/>
+```
+
+传入 `catalog={false}` 可以完全隐藏同步控件。公共清单格式见 [`catalog/manifest.json`](./catalog/manifest.json)。
+
 ## 给 AI 使用：可选 MCP
 
 MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文字，再把它放进自己的回复；选用次数会写进本地 JSON，常用项随后自然靠前。
@@ -49,7 +71,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -71,7 +93,7 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0"]
     }
   }
 }
@@ -98,7 +120,7 @@ React drawer ── KaomojiRepository ── shared REST/SQLite/JSON bridge
                                       └── MCP tools
 ```
 
-本仓库故意不附带公网同步账号；共享由使用者自己的应用边界决定。
+本仓库故意不附带公网同步账号；精选库只同步公共内容，个人收藏、频率和私有共享仍由使用者自己的应用边界决定。
 
 ## 自己接数据源
 
