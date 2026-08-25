@@ -2,6 +2,7 @@ import { defaultKaomojiEntries } from "./default-library.js";
 const transportControls = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/g;
 const riskyScripts = /[\u0980-\u0dff\u0f00-\u0fff\u1000-\u109f\u1780-\u17ff]/u;
 const invalid = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffd]/u;
+const compatibilityRank = { stable: 0, limited: 1, blocked: 2 };
 const categoryAliases = {
     cute: "可爱", affectionate: "亲亲", kiss: "亲亲", kissing: "亲亲",
     shy: "害羞", studying: "学习", study: "学习", sad: "伤心",
@@ -60,6 +61,15 @@ export function rankKaomojiCategories(items, manualOrder = []) {
 export function normalizeKaomoji(value) {
     return value.replace(transportControls, "").normalize("NFC").trim();
 }
+function assertVisibleKaomoji(value) {
+    if (!value)
+        throw new TypeError("Kaomoji must contain a visible character after normalization.");
+}
+function compareKaomojiItems(a, b) {
+    return Number(b.favorite) - Number(a.favorite)
+        || b.useCount - a.useCount
+        || compatibilityRank[a.compatibility] - compatibilityRank[b.compatibility];
+}
 export function analyzeKaomoji(value, categories = []) {
     const clean = normalizeKaomoji(value);
     const notes = [];
@@ -104,8 +114,13 @@ export function decodeKaomojiState(value) {
     return { version: 4, items: [], removed: [], categoryOrder: [] };
 }
 export function hydrateKaomojiState(state) {
-    const removed = new Set(state.removed.map(normalizeKaomoji));
-    const existing = new Map(state.items.map((item) => [normalizeKaomoji(item.value), item]));
+    const removed = new Set(state.removed.map(normalizeKaomoji).filter(Boolean));
+    const existing = new Map();
+    for (const item of state.items) {
+        const clean = normalizeKaomoji(item.value);
+        if (clean)
+            existing.set(clean, item);
+    }
     const items = defaultKaomojiItems()
         .filter((item) => !removed.has(item.value))
         .map((item) => existing.get(item.value) ?? item)
@@ -113,6 +128,8 @@ export function hydrateKaomojiState(state) {
     const present = new Set(items.map((item) => item.value));
     for (const item of state.items) {
         const clean = normalizeKaomoji(item.value);
+        if (!clean)
+            continue;
         if (!removed.has(clean) && !present.has(clean)) {
             items.push({ ...item, value: clean, categories: normalizeKaomojiCategories(item.categories) });
             present.add(clean);
@@ -134,11 +151,12 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1") {
     const write = (state) => window.localStorage.setItem(storageKey, JSON.stringify(state));
     return {
         async list() {
-            return readState().items.sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.compatibility.localeCompare(b.compatibility) || b.useCount - a.useCount);
+            return readState().items.sort(compareKaomojiItems);
         },
         async upsert(value, categories, label) {
             const cleanCategories = normalizeKaomojiCategories(categories);
             const analysis = analyzeKaomoji(value, cleanCategories);
+            assertVisibleKaomoji(analysis.value);
             const state = readState();
             const previous = state.items.find((item) => item.value === analysis.value);
             const saved = {
@@ -155,7 +173,10 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1") {
         async remove(value) {
             const state = readState();
             const clean = normalizeKaomoji(value);
+            if (!clean || !state.items.some((item) => item.value === clean))
+                return false;
             write({ ...state, items: state.items.filter((item) => item.value !== clean), removed: [...new Set([...state.removed, clean])] });
+            return true;
         },
         async markUsed(value) {
             const state = readState();

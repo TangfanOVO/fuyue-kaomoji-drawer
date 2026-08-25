@@ -86,6 +86,23 @@ test("ships a non-empty reviewed library and merges duplicate category tags", ()
   assert.equal(new Set(items.map((item) => item.value)).size, items.length);
 });
 
+test("shows stable default faces before unused limited-compatibility faces", async () => {
+  const values = new Map();
+  globalThis.window = { localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) } };
+  const items = await createLocalKaomojiRepository("test.stable-first").list();
+  const firstLimited = items.findIndex((item) => item.compatibility === "limited");
+  const lastStable = items.findLastIndex((item) => item.compatibility === "stable");
+  assert.ok(firstLimited > lastStable);
+});
+
+test("rejects normalized-empty faces and reports missing removals", async () => {
+  const values = new Map();
+  globalThis.window = { localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) } };
+  const repository = createLocalKaomojiRepository("test.validation");
+  await assert.rejects(() => repository.upsert(" \u200e \ufeff ", ["可爱"]), /visible character/);
+  assert.equal(await repository.remove("(definitely-missing)"), false);
+});
+
 test("keeps catalog sync opt-in and remembers the chosen mode", () => {
   const values = new Map();
   globalThis.window = {
@@ -110,6 +127,7 @@ test("syncs a reviewed catalog without restoring a locally removed face", async 
     },
   };
   const repository = createLocalKaomojiRepository("test.catalog.merge");
+  await repository.upsert("(remote-one)", ["开心"]);
   await repository.remove("(remote-one)");
   const fetcher = async (url) => new Response(JSON.stringify(String(url).endsWith("manifest.json") ? {
     schemaVersion: 1,
@@ -136,6 +154,8 @@ test("persists a private file library atomically", async (context) => {
   context.after(() => rm(directory, { recursive: true, force: true }));
   const file = join(directory, "kaomoji.json");
   const repository = createFileKaomojiRepository(file);
+  await assert.rejects(() => repository.upsert(" \u200e \ufeff ", ["可爱"]), /visible character/);
+  assert.equal(await repository.remove("(definitely-missing)"), false);
   await repository.upsert("(file-test)", ["开心", "猫猫"], "test face");
   await repository.markUsed("(file-test)");
   await repository.setFavorite("(file-test)", true);
@@ -170,6 +190,12 @@ test("exposes searchable MCP tools and increments hidden use frequency", async (
 
   const tools = await client.listTools();
   assert.ok(tools.tools.some((tool) => tool.name === "kaomoji_pick"));
+  const missingRemoval = await client.callTool({ name: "kaomoji_remove", arguments: { value: "(definitely-missing)" } });
+  assert.deepEqual(JSON.parse(missingRemoval.content.find((part) => part.type === "text")?.text), {
+    removed: false,
+    value: "(definitely-missing)",
+    reason: "not_found",
+  });
   await client.callTool({ name: "kaomoji_add", arguments: { value: "(mcp-test)", categories: ["开心"], label: "mcp happy" } });
   await client.callTool({ name: "kaomoji_add", arguments: { value: "(mcp-test-2)", categories: ["开心"], label: "mcp happy" } });
   const first = await client.callTool({ name: "kaomoji_pick", arguments: { query: "mcp happy" } });

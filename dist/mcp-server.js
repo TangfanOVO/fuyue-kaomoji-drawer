@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
-import { analyzeKaomoji } from "./repository.js";
+import { analyzeKaomoji, normalizeKaomoji } from "./repository.js";
 import { createFileKaomojiRepository, defaultKaomojiPath } from "./file-repository.js";
 import { selectDiverseKaomoji } from "./selection.js";
 const packageVersion = String(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
@@ -60,7 +60,7 @@ export function buildKaomojiMcpServer(options = {}) {
         title: "Add or update a kaomoji",
         description: "Add a kaomoji to the private local library, merge duplicate values, and classify it into one or more categories.",
         inputSchema: {
-            value: z.string().min(1).max(300),
+            value: z.string().min(1).max(300).refine((value) => Boolean(normalizeKaomoji(value)), "Kaomoji must contain a visible character."),
             categories: z.array(z.string().min(1).max(40)).min(1).max(8),
             label: z.string().max(80).optional(),
         },
@@ -70,8 +70,9 @@ export function buildKaomojiMcpServer(options = {}) {
         description: "Delete an exact kaomoji value from the private local library.",
         inputSchema: { value: z.string().min(1).max(300) },
     }, async ({ value }) => {
-        await repository.remove(value);
-        return textResult({ removed: true, value: analyzeKaomoji(value).value });
+        const clean = analyzeKaomoji(value).value;
+        const removed = await repository.remove(value);
+        return textResult({ removed, value: clean, ...(!removed ? { reason: "not_found" } : {}) });
     });
     server.registerTool("kaomoji_favorite", {
         title: "Favourite or unfavourite a kaomoji",

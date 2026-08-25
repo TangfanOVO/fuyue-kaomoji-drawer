@@ -61,7 +61,7 @@ export interface KaomojiReviewRepository {
 export interface KaomojiRepository {
     list(): Promise<KaomojiItem[]>;
     upsert(value: string, categories: string[], label?: string): Promise<KaomojiItem>;
-    remove(value: string): Promise<void>;
+    remove(value: string): Promise<boolean>;
     markUsed(value: string): Promise<void>;
     setFavorite(value: string, favorite: boolean): Promise<void>;
     getCategoryOrder?(): Promise<string[]>;

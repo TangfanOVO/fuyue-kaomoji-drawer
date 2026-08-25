@@ -37,12 +37,13 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()): Ka
       return (await readState()).items.sort((a, b) =>
         Number(b.favorite) - Number(a.favorite)
         || b.useCount - a.useCount
-        || a.compatibility.localeCompare(b.compatibility),
+        || ({ stable: 0, limited: 1, blocked: 2 }[a.compatibility] - { stable: 0, limited: 1, blocked: 2 }[b.compatibility]),
       );
     },
     async upsert(value, categories, label) {
       const cleanCategories = normalizeKaomojiCategories(categories);
       const analysis = analyzeKaomoji(value, cleanCategories);
+      if (!analysis.value) throw new TypeError("Kaomoji must contain a visible character after normalization.");
       const state = await readState();
       const previous = state.items.find((item) => item.value === analysis.value);
       const saved: KaomojiItem = {
@@ -59,7 +60,9 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()): Ka
     async remove(value) {
       const state = await readState();
       const clean = normalizeKaomoji(value);
+      if (!clean || !state.items.some((item) => item.value === clean)) return false;
       await write({ ...state, items: state.items.filter((item) => item.value !== clean), removed: [...new Set([...state.removed, clean])] });
+      return true;
     },
     async markUsed(value) {
       const state = await readState();
