@@ -2,7 +2,7 @@
 
 [简体中文](./README.md) · [English](./README.en.md)
 
-A local-first React kaomoji drawer with an optional MCP server for AI companions and desktop clients. It ships with 325 deduplicated public kaomoji instead of an empty drawer, and supports manual add/remove, multiple categories per record, favourites, hidden usage-frequency ranking, and Unicode compatibility hints.
+A local-first React kaomoji drawer with an optional MCP server for AI companions and desktop clients. It ships with 325 deduplicated public kaomoji instead of an empty drawer, and supports manual add/remove, multiple categories per record, favourites, manual category ordering, hidden usage-frequency ranking, and Unicode compatibility hints.
 
 The primary entry point is a React component that can be installed in one command. The MCP server is optional: regular users do not need to deploy a backend, while AI clients can search, pick, curate, and learn from local usage through standard tools.
 
@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
 ```
 
 ## React integration
@@ -49,7 +49,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -71,7 +71,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1"]
     }
   }
 }
@@ -89,7 +89,7 @@ Available tools:
 
 Whether a particular desktop or mobile app can use the MCP entry depends on whether it supports local stdio MCP and custom commands. The React drawer remains usable without MCP.
 
-Legacy English category labels such as `shy`, `studying`, `sad`, `angry`, and `happy` are migrated into the Chinese taxonomy on read. Category tabs are ordered using hidden local usage, favourites, and a practical fallback order, so rarely used tags move later.
+Legacy English category labels such as `shy`, `studying`, `sad`, `angry`, and `happy` are migrated into the Chinese taxonomy on read. Category tabs use hidden local usage, favourites, and a practical fallback order by default. They can also be reordered by drag or arrow controls under **Manage**. Once saved, manual order wins; unseen categories are appended using the automatic order.
 
 ### Sharing usage between the drawer and MCP
 
@@ -123,6 +123,8 @@ If your backend also maintains a fetched review queue, implement the optional `K
 Remote collection and automatic review belong in your own repository/backend adapter. Preserve sources and licences; auto-approve entries only when both provenance and cross-device rendering are reliable, and send uncertain glyphs or categories to a review queue.
 
 ## Unicode compatibility
+
+Entries explicitly categorized as `ASCII Art`, `ascii_art`, or `字符画` preserve authored line breaks and indentation. Those layout characters are not reported as corruption; genuine damaged characters and font-coverage risks are still surfaced.
 
 When a kaomoji renders correctly on one device but appears as bars or missing-glyph boxes on another, the cause is often font coverage or combining-mark behaviour rather than broken UTF-8. This package:
 

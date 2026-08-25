@@ -5,7 +5,7 @@ const transportControls = /[\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069\ufeff]/
 const riskyScripts = /[\u0980-\u0dff\u0f00-\u0fff\u1000-\u109f\u1780-\u17ff]/u;
 const invalid = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffd]/u;
 
-export type StoredKaomojiState = { version: 3; items: KaomojiItem[]; removed: string[] };
+export type StoredKaomojiState = { version: 4; items: KaomojiItem[]; removed: string[]; categoryOrder: string[] };
 
 const categoryAliases: Record<string, string> = {
   cute: "可爱", affectionate: "亲亲", kiss: "亲亲", kissing: "亲亲",
@@ -18,6 +18,7 @@ const categoryAliases: Record<string, string> = {
   serious: "严肃", tsundere: "傲娇", eating: "吃吃", food: "吃吃",
   love: "爱心", heart: "爱心", couple: "双人", duo: "双人",
   lost: "失落", helpless: "无奈", facepalm: "捂脸",
+  ascii: "字符画", "ascii art": "字符画", ascii_art: "字符画", "character art": "字符画",
 };
 
 const categoryPriority = [
@@ -35,7 +36,11 @@ export function normalizeKaomojiCategories(categories: string[]) {
   return [...new Set(categories.map(normalizeKaomojiCategory).filter(Boolean))].slice(0, 8);
 }
 
-export function rankKaomojiCategories(items: KaomojiItem[]) {
+export function normalizeKaomojiCategoryOrder(categories: string[]) {
+  return [...new Set(categories.map(normalizeKaomojiCategory).filter(Boolean))].slice(0, 100);
+}
+
+export function rankKaomojiCategories(items: KaomojiItem[], manualOrder: string[] = []) {
   const statistics = new Map<string, { uses: number; favorites: number; items: number }>();
   for (const item of items) {
     for (const category of normalizeKaomojiCategories(item.categories)) {
@@ -46,7 +51,7 @@ export function rankKaomojiCategories(items: KaomojiItem[]) {
       statistics.set(category, current);
     }
   }
-  return [...statistics.keys()].sort((left, right) => {
+  const automatic = [...statistics.keys()].sort((left, right) => {
     const a = statistics.get(left)!;
     const b = statistics.get(right)!;
     return b.uses - a.uses
@@ -56,22 +61,30 @@ export function rankKaomojiCategories(items: KaomojiItem[]) {
       || b.items - a.items
       || left.localeCompare(right, "zh-CN");
   });
+  if (!manualOrder.length) return automatic;
+  const present = new Set(automatic);
+  const manual = normalizeKaomojiCategoryOrder(manualOrder).filter((category) => present.has(category));
+  return [...manual, ...automatic.filter((category) => !manual.includes(category))];
 }
 
 export function normalizeKaomoji(value: string) {
   return value.replace(transportControls, "").normalize("NFC").trim();
 }
 
-export function analyzeKaomoji(value: string) {
+export function analyzeKaomoji(value: string, categories: string[] = []) {
   const clean = normalizeKaomoji(value);
   const notes: string[] = [];
-  if (invalid.test(clean)) notes.push("含有无法稳定传输的字符");
+  const asciiArt = normalizeKaomojiCategories(categories).includes("字符画");
+  const invalidForKind = asciiArt
+    ? /[\u0000-\u0008\u000b\u000c\u000e-\u001f\ufffd]/u
+    : invalid;
+  if (invalidForKind.test(clean)) notes.push("含有无法稳定传输的字符");
   if (/\p{Mark}{3,}/u.test(clean.normalize("NFD"))) notes.push("叠加符号较多，部分设备会显示成黑条");
   if (riskyScripts.test(clean)) notes.push("使用罕见字形，缺少字体时可能变成方块");
   const safe = clean.normalize("NFD").replace(/\p{Mark}/gu, "").replace(transportControls, "").replace(riskyScripts, "").normalize("NFC").trim();
   return {
     value: clean,
-    compatibility: invalid.test(clean) ? "blocked" as const : notes.length ? "limited" as const : "stable" as const,
+    compatibility: invalidForKind.test(clean) ? "blocked" as const : notes.length ? "limited" as const : "stable" as const,
     compatibilityNotes: notes,
     safeValue: safe && safe !== clean ? safe : undefined,
   };
@@ -79,20 +92,25 @@ export function analyzeKaomoji(value: string) {
 
 export function defaultKaomojiItems(): KaomojiItem[] {
   return defaultKaomojiEntries.map((entry) => ({
-    ...analyzeKaomoji(entry.value),
-    categories: [...entry.categories],
+    ...analyzeKaomoji(entry.value, [...entry.categories]),
+    categories: normalizeKaomojiCategories([...entry.categories]),
     favorite: false,
     useCount: 0,
   }));
 }
 
 export function decodeKaomojiState(value: unknown): StoredKaomojiState {
-  if (Array.isArray(value)) return { version: 3, items: value as KaomojiItem[], removed: [] };
+  if (Array.isArray(value)) return { version: 4, items: value as KaomojiItem[], removed: [], categoryOrder: [] };
   if (value && typeof value === "object" && Array.isArray((value as StoredKaomojiState).items)) {
     const state = value as StoredKaomojiState;
-    return { version: 3, items: state.items, removed: Array.isArray(state.removed) ? state.removed : [] };
+    return {
+      version: 4,
+      items: state.items,
+      removed: Array.isArray(state.removed) ? state.removed : [],
+      categoryOrder: Array.isArray(state.categoryOrder) ? normalizeKaomojiCategoryOrder(state.categoryOrder) : [],
+    };
   }
-  return { version: 3, items: [], removed: [] };
+  return { version: 4, items: [], removed: [], categoryOrder: [] };
 }
 
 export function hydrateKaomojiState(state: StoredKaomojiState): StoredKaomojiState {
@@ -110,7 +128,7 @@ export function hydrateKaomojiState(state: StoredKaomojiState): StoredKaomojiSta
       present.add(clean);
     }
   }
-  return { version: 3, items, removed: [...removed] };
+  return { version: 4, items, removed: [...removed], categoryOrder: normalizeKaomojiCategoryOrder(state.categoryOrder) };
 }
 
 export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1"): KaomojiRepository {
@@ -127,13 +145,14 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1"): K
       return readState().items.sort((a, b) => Number(b.favorite) - Number(a.favorite) || a.compatibility.localeCompare(b.compatibility) || b.useCount - a.useCount);
     },
     async upsert(value, categories, label) {
-      const analysis = analyzeKaomoji(value);
+      const cleanCategories = normalizeKaomojiCategories(categories);
+      const analysis = analyzeKaomoji(value, cleanCategories);
       const state = readState();
       const previous = state.items.find((item) => item.value === analysis.value);
       const saved: KaomojiItem = {
         ...analysis,
         label: label?.trim() || previous?.label,
-        categories: normalizeKaomojiCategories(categories),
+        categories: cleanCategories,
         favorite: previous?.favorite ?? false,
         useCount: previous?.useCount ?? 0,
         lastUsedAt: previous?.lastUsedAt,
@@ -153,6 +172,13 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1"): K
     async setFavorite(value, favorite) {
       const state = readState();
       write({ ...state, items: state.items.map((item) => item.value === value ? { ...item, favorite } : item) });
+    },
+    async getCategoryOrder() {
+      return readState().categoryOrder;
+    },
+    async setCategoryOrder(categories) {
+      const state = readState();
+      write({ ...state, categoryOrder: normalizeKaomojiCategoryOrder(categories) });
     },
   };
 }

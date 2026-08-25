@@ -34,4 +34,6 @@ export interface KaomojiRepository {
     remove(value: string): Promise<void>;
     markUsed(value: string): Promise<void>;
     setFavorite(value: string, favorite: boolean): Promise<void>;
+    getCategoryOrder?(): Promise<string[]>;
+    setCategoryOrder?(categories: string[]): Promise<void>;
 }

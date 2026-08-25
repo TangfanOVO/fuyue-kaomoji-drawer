@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { analyzeKaomoji, decodeKaomojiState, hydrateKaomojiState, normalizeKaomoji, normalizeKaomojiCategories } from "./repository.js";
+import { analyzeKaomoji, decodeKaomojiState, hydrateKaomojiState, normalizeKaomoji, normalizeKaomojiCategories, normalizeKaomojiCategoryOrder } from "./repository.js";
 export function defaultKaomojiPath() {
     return resolve(process.env.FUYUE_KAOMOJI_PATH || resolve(homedir(), ".fuyue-kaomoji", "kaomoji.json"));
 }
@@ -34,13 +34,14 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
                 || a.compatibility.localeCompare(b.compatibility));
         },
         async upsert(value, categories, label) {
-            const analysis = analyzeKaomoji(value);
+            const cleanCategories = normalizeKaomojiCategories(categories);
+            const analysis = analyzeKaomoji(value, cleanCategories);
             const state = await readState();
             const previous = state.items.find((item) => item.value === analysis.value);
             const saved = {
                 ...analysis,
                 label: label?.trim() || previous?.label,
-                categories: normalizeKaomojiCategories(categories),
+                categories: cleanCategories,
                 favorite: previous?.favorite ?? false,
                 useCount: previous?.useCount ?? 0,
                 lastUsedAt: previous?.lastUsedAt,
@@ -62,6 +63,13 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
             const state = await readState();
             const clean = normalizeKaomoji(value);
             await write({ ...state, items: state.items.map((item) => item.value === clean ? { ...item, favorite } : item) });
+        },
+        async getCategoryOrder() {
+            return (await readState()).categoryOrder;
+        },
+        async setCategoryOrder(categories) {
+            const state = await readState();
+            await write({ ...state, categoryOrder: normalizeKaomojiCategoryOrder(categories) });
         },
     };
 }

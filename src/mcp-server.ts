@@ -35,7 +35,7 @@ export type BuildKaomojiMcpOptions = {
 
 export function buildKaomojiMcpServer(options: BuildKaomojiMcpOptions = {}) {
   const repository = options.repository ?? createFileKaomojiRepository(options.filePath);
-  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.3.0" });
+  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.3.1" });
   const recentPicks: string[] = [];
 
   server.registerTool("kaomoji_search", {

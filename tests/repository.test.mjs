@@ -26,6 +26,12 @@ test("splits multiple categories with English and Chinese punctuation", () => {
 
 test("merges legacy English labels into the Chinese taxonomy", () => {
   assert.deepEqual(normalizeKaomojiCategories(["shy", "害羞", "studying", "happy"]), ["害羞", "学习", "开心"]);
+  assert.deepEqual(normalizeKaomojiCategories(["ascii_art", "ASCII Art", "字符画"]), ["字符画"]);
+});
+
+test("treats line breaks as authored structure for explicit ASCII art", () => {
+  const value = " /\\_/\\\n( o.o )\n > ^ <";
+  assert.equal(analyzeKaomoji(value, ["ascii_art"]).compatibility, "stable");
 });
 
 test("orders category tabs by private usage before fallback taxonomy", () => {
@@ -35,6 +41,7 @@ test("orders category tabs by private usage before fallback taxonomy", () => {
     { value: "c", categories: ["可爱"], favorite: false, useCount: 0, compatibility: "stable", compatibilityNotes: [] },
   ];
   assert.deepEqual(rankKaomojiCategories(items), ["猫猫", "可爱", "丑陋"]);
+  assert.deepEqual(rankKaomojiCategories(items, ["丑陋", "猫猫"]), ["丑陋", "猫猫", "可爱"]);
 });
 
 test("rotates AI picks away from the immediately repeated face", () => {
@@ -62,6 +69,8 @@ test("stores categories, favourites and hidden usage ranking locally", async () 
   assert.equal(items[0].value, "(test-a)");
   assert.deepEqual(items[0].categories, ["猫猫", "开心"]);
   assert.equal(items.find((item) => item.value === "(test-b)")?.useCount, 1);
+  await repository.setCategoryOrder?.(["兔兔", "猫猫", "开心"]);
+  assert.deepEqual(await repository.getCategoryOrder?.(), ["兔兔", "猫猫", "开心"]);
 });
 
 test("ships a non-empty reviewed library and merges duplicate category tags", () => {
@@ -85,6 +94,8 @@ test("persists a private file library atomically", async (context) => {
   assert.ok(item.lastUsedAt);
   assert.equal(item.favorite, true);
   assert.deepEqual(item.categories, ["开心", "猫猫"]);
+  await repository.setCategoryOrder?.(["猫猫", "开心"]);
+  assert.deepEqual((JSON.parse(await readFile(file, "utf8"))).categoryOrder, ["猫猫", "开心"]);
   const defaultValue = (await repository.list())[0].value;
   await repository.remove(defaultValue);
   assert.equal((await repository.list()).some((candidate) => candidate.value === defaultValue), false);

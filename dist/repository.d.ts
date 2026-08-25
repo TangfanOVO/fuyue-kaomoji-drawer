@@ -1,14 +1,16 @@
 import type { KaomojiItem, KaomojiRepository } from "./types.js";
 export type StoredKaomojiState = {
-    version: 3;
+    version: 4;
     items: KaomojiItem[];
     removed: string[];
+    categoryOrder: string[];
 };
 export declare function normalizeKaomojiCategory(category: string): string;
 export declare function normalizeKaomojiCategories(categories: string[]): string[];
-export declare function rankKaomojiCategories(items: KaomojiItem[]): string[];
+export declare function normalizeKaomojiCategoryOrder(categories: string[]): string[];
+export declare function rankKaomojiCategories(items: KaomojiItem[], manualOrder?: string[]): string[];
 export declare function normalizeKaomoji(value: string): string;
-export declare function analyzeKaomoji(value: string): {
+export declare function analyzeKaomoji(value: string, categories?: string[]): {
     value: string;
     compatibility: "stable" | "limited" | "blocked";
     compatibilityNotes: string[];

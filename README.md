@@ -2,7 +2,7 @@
 
 [简体中文](./README.md) · [English](./README.en.md)
 
-一个可以直接塞进聊天输入区的 React 颜文字抽屉，加上一层可选的本地 MCP 服务。安装后自带 325 枚已去重的公共颜文字，不是空抽屉；支持手动添加/删除、一枚同时归入多个分类、收藏、隐藏的使用频率排序和 Unicode 跨设备风险提醒。
+一个可以直接塞进聊天输入区的 React 颜文字抽屉，加上一层可选的本地 MCP 服务。安装后自带 325 枚已去重的公共颜文字，不是空抽屉；支持手动添加/删除、一枚同时归入多个分类、收藏、手动分类顺序、隐藏的使用频率排序和 Unicode 跨设备风险提醒。
 
 它的主入口仍是**前端组件 / 一条命令接入**。MCP 是给 AI companion 和桌面客户端的可选入口，不要求普通用户部署服务器。需要团队数据库、REST API 或 SQLite 时，只要实现同一个 `KaomojiRepository` 接口，无需重写界面或工具定义。
 
@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 也可以固定到发布版本：
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
 ```
 
 ## React 接入
@@ -49,7 +49,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -71,7 +71,7 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.1"]
     }
   }
 }
@@ -87,7 +87,7 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
 
 Operit 是否能直接使用，取决于当前版本是否支持本地 stdio MCP 与自定义命令。支持时只需配置一次；不支持时仍可单独使用 React 抽屉。
 
-旧数据里的 `shy`、`studying`、`sad`、`angry`、`happy` 等英文分类会在读取时自动合并进中文分类。分类标签本身也按隐藏使用频率、收藏和常用度排序，不常用的会自然退到后面。
+旧数据里的 `shy`、`studying`、`sad`、`angry`、`happy` 等英文分类会在读取时自动合并进中文分类。分类标签默认按隐藏使用频率、收藏和常用度排序；在「整理」里也可以拖动或用箭头手动排序。一旦手动排过，人定的顺序优先，新分类才按智能顺序补在后面。
 
 ### 让抽屉与 AI 共用频率
 
@@ -121,6 +121,8 @@ const repository: KaomojiRepository = {
 远程抓取与自动审批应放在你自己的 repository/backend 适配层：保留来源和许可证；可信且跨设备稳定的条目可以自动入库，罕见字形、分类存疑或来源不清的条目应进入人工候选箱。不要把未经审核的网页集合静默发布给所有用户。
 
 ## Unicode 兼容说明
+
+明确归在 `ASCII Art`、`ascii_art` 或「字符画」的条目会保留换行和缩进，这些排版符不会被误报为异常字符。真正的损坏字符和缺失字形风险仍会照常提醒。
 
 部分颜文字在一台设备正常、另一台设备变成黑条或方块，通常是缺少字体字形或叠加符号渲染差异，不一定是 UTF-8 损坏。本组件会：
 
