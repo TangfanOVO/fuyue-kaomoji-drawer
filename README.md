@@ -1,10 +1,12 @@
 # Fuyue Kaomoji Drawer
 
+[简体中文](./README.md) · [English](./README.en.md)
+
 一个可以直接塞进聊天输入区的 React 颜文字抽屉，加上一层可选的本地 MCP 服务。默认只使用用户自己的本地存储；支持手动添加/删除、多重分类、收藏、隐藏的使用频率排序、Unicode 跨设备风险提醒，以及较稳定的兼容版复制。
 
 它的主入口仍是**前端组件 / 一条命令接入**。MCP 是给 AI companion 和桌面客户端的可选入口，不要求普通用户部署服务器。需要团队数据库、REST API 或 SQLite 时，只要实现同一个 `KaomojiRepository` 接口，无需重写界面或工具定义。
 
-## 两种使用方式
+## 三种使用方式
 
 | 方式 | 适合谁 | 数据位置 | 需要后端 |
 | --- | --- | --- | --- |
@@ -134,10 +136,8 @@ npm test
 
 要求 Node.js 20 或更新版本。MCP 使用官方 TypeScript SDK v2 的 stdio transport；协议输出只走 stdout，不在那里打印调试日志。
 
-## 隐私与开源边界
+## 致谢
 
-仓库只包含通用前端组件、少量虚构示例和测试。它不包含赴约私有身份、聊天、记忆、真实颜文字库、使用频率、收藏、候选审批记录、登录信息、生产配置或密钥。
-
-参考灵感来自 [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit)。本实现是独立的 React/TypeScript 组件，并未复制其 Swift 源码或默认数据集。
+设计灵感来自 [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit)。本实现是独立的 React/TypeScript 组件，并未复制其 Swift 源码或默认数据集。
 
 许可证：AGPL-3.0-only。
