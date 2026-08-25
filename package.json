@@ -1,9 +1,9 @@
 {
   "name": "@fuyue/kaomoji-drawer",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local-first React kaomoji drawer and optional MCP server with hidden usage ranking, manual curation and Unicode compatibility hints.",
   "type": "module",
-  "license": "AGPL-3.0-only",
+  "license": "MIT",
   "homepage": "https://github.com/TangfanOVO/fuyue-kaomoji-drawer#readme",
   "repository": {
     "type": "git",

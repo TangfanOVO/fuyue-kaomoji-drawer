@@ -24,7 +24,7 @@ async function search(repository, query = "", category, limit = 12) {
 }
 export function buildKaomojiMcpServer(options = {}) {
     const repository = options.repository ?? createFileKaomojiRepository(options.filePath);
-    const server = new McpServer({ name: "fuyue-kaomoji", version: "0.1.0" });
+    const server = new McpServer({ name: "fuyue-kaomoji", version: "0.1.1" });
     server.registerTool("kaomoji_search", {
         title: "Search kaomoji",
         description: "Search the local kaomoji library by visible face, label, or category. Results are ranked by favourite and hidden usage frequency.",

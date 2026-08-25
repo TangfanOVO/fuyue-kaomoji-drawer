@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
 ```
 
 ## React integration
@@ -49,7 +49,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -71,7 +71,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1"]
     }
   }
 }
@@ -142,4 +142,4 @@ Requires Node.js 20 or newer. The MCP server uses the official TypeScript SDK v2
 
 Inspired by [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit). This is an independent React/TypeScript implementation and does not copy its Swift source or default dataset.
 
-Licence: AGPL-3.0-only.
+Licence: [MIT](./LICENSE). Personal and commercial use, modification, distribution, and sublicensing are permitted; retain the copyright and licence notice.

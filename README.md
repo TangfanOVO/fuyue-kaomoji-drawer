@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 也可以固定到发布版本：
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
 ```
 
 ## React 接入
@@ -49,7 +49,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -71,7 +71,7 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1"]
     }
   }
 }
@@ -140,4 +140,4 @@ npm test
 
 设计灵感来自 [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit)。本实现是独立的 React/TypeScript 组件，并未复制其 Swift 源码或默认数据集。
 
-许可证：AGPL-3.0-only。
+许可证：[MIT](./LICENSE)。允许个人与商业使用、修改、分发和再许可；请保留版权与许可证声明。
