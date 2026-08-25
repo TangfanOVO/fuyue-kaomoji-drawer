@@ -165,6 +165,8 @@ test("exposes searchable MCP tools and increments hidden use frequency", async (
   });
   context.after(() => client.close());
   await client.connect(transport);
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(client.getServerVersion()?.version, packageJson.version);
 
   const tools = await client.listTools();
   assert.ok(tools.tools.some((tool) => tool.name === "kaomoji_pick"));

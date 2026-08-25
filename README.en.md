@@ -17,13 +17,13 @@ The primary entry point is a React component that can be installed in one comman
 ## Install from GitHub
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.2.tar.gz
 ```
 
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.2.tar.gz
 ```
 
 ## React integration
@@ -71,7 +71,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1
+npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.2.tar.gz
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -93,7 +93,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1"]
+      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.2.tar.gz"]
     }
   }
 }

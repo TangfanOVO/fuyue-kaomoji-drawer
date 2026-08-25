@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
 import { analyzeKaomoji } from "./repository.js";
@@ -5,6 +6,8 @@ import { createFileKaomojiRepository, defaultKaomojiPath } from "./file-reposito
 import { selectDiverseKaomoji } from "./selection.js";
 import type { KaomojiVariety } from "./selection.js";
 import type { KaomojiItem, KaomojiRepository } from "./types.js";
+
+const packageVersion = String(JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")).version);
 
 function textResult(value: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
@@ -35,7 +38,7 @@ export type BuildKaomojiMcpOptions = {
 
 export function buildKaomojiMcpServer(options: BuildKaomojiMcpOptions = {}) {
   const repository = options.repository ?? createFileKaomojiRepository(options.filePath);
-  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.3.1" });
+  const server = new McpServer({ name: "fuyue-kaomoji", version: packageVersion });
   const recentPicks: string[] = [];
 
   server.registerTool("kaomoji_search", {
