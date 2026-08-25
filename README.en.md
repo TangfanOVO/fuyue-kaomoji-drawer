@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
 ```
 
 ## React integration
@@ -49,7 +49,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -71,7 +71,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0"]
     }
   }
 }
@@ -82,12 +82,14 @@ The default data file is `~/.fuyue-kaomoji/kaomoji.json`. The bundled 325-entry 
 Available tools:
 
 - `kaomoji_search`: search by mood, label, category, or literal fragment;
-- `kaomoji_pick`: select the highest-ranked match and increment its hidden use count;
+- `kaomoji_pick`: rotate among strong matches, avoid immediate repetition, and increment the hidden use count;
 - `kaomoji_add` / `kaomoji_remove`: curate the local library;
 - `kaomoji_favorite`: favourite or unfavourite an entry;
 - `kaomoji_inspect`: inspect compatibility risks without saving.
 
 Whether a particular desktop or mobile app can use the MCP entry depends on whether it supports local stdio MCP and custom commands. The React drawer remains usable without MCP.
+
+Legacy English category labels such as `shy`, `studying`, `sad`, `angry`, and `happy` are migrated into the Chinese taxonomy on read. Category tabs are ordered using hidden local usage, favourites, and a practical fallback order, so rarely used tags move later.
 
 ### Sharing usage between the drawer and MCP
 

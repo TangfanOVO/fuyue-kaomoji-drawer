@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 也可以固定到发布版本：
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
 ```
 
 ## React 接入
@@ -49,7 +49,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -71,7 +71,7 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.3.0"]
     }
   }
 }
@@ -80,12 +80,14 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
 默认数据文件是 `~/.fuyue-kaomoji/kaomoji.json`。首次运行即会读到包内的 325 枚默认库；旧版的 6 枚起始数据也会自动补齐。可用环境变量 `FUYUE_KAOMOJI_PATH` 指向另一份 JSON。工具包括：
 
 - `kaomoji_search`：按情绪、名称、分类或颜文字片段搜索；
-- `kaomoji_pick`：选择最高排序结果并累计隐藏频率；
+- `kaomoji_pick`：从高质量候选池里轮换选择、避免连续重复，并累计隐藏频率；
 - `kaomoji_add` / `kaomoji_remove`：手动增删；
 - `kaomoji_favorite`：收藏或取消收藏；
 - `kaomoji_inspect`：不入库，只检查乱码与跨设备兼容风险。
 
 Operit 是否能直接使用，取决于当前版本是否支持本地 stdio MCP 与自定义命令。支持时只需配置一次；不支持时仍可单独使用 React 抽屉。
+
+旧数据里的 `shy`、`studying`、`sad`、`angry`、`happy` 等英文分类会在读取时自动合并进中文分类。分类标签本身也按隐藏使用频率、收藏和常用度排序，不常用的会自然退到后面。
 
 ### 让抽屉与 AI 共用频率
 

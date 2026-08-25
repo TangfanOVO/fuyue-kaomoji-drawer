@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod/v4";
 import { analyzeKaomoji } from "./repository.js";
 import { createFileKaomojiRepository, defaultKaomojiPath } from "./file-repository.js";
+import { selectDiverseKaomoji } from "./selection.js";
+import type { KaomojiVariety } from "./selection.js";
 import type { KaomojiItem, KaomojiRepository } from "./types.js";
 
 function textResult(value: unknown) {
@@ -14,7 +16,7 @@ function score(item: KaomojiItem, query: string, category?: string) {
   const matched = !needle || haystack.includes(needle);
   const categoryMatched = !category || item.categories.includes(category);
   if (!matched || !categoryMatched || item.compatibility === "blocked") return Number.NEGATIVE_INFINITY;
-  return Number(item.favorite) * 100_000 + item.useCount * 100 + (item.compatibility === "stable" ? 10 : 0);
+  return Number(item.favorite) * 100 + Math.log1p(Math.max(0, item.useCount)) * 4 + (item.compatibility === "stable" ? 10 : 0);
 }
 
 async function search(repository: KaomojiRepository, query = "", category?: string, limit = 12) {
@@ -33,7 +35,8 @@ export type BuildKaomojiMcpOptions = {
 
 export function buildKaomojiMcpServer(options: BuildKaomojiMcpOptions = {}) {
   const repository = options.repository ?? createFileKaomojiRepository(options.filePath);
-  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.2.0" });
+  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.3.0" });
+  const recentPicks: string[] = [];
 
   server.registerTool("kaomoji_search", {
     title: "Search kaomoji",
@@ -47,16 +50,20 @@ export function buildKaomojiMcpServer(options: BuildKaomojiMcpOptions = {}) {
 
   server.registerTool("kaomoji_pick", {
     title: "Pick and use a kaomoji",
-    description: "Choose the highest-ranked matching kaomoji, increment its private usage count, and return it for inclusion in the assistant response.",
+    description: "Choose from the best matching kaomoji while avoiding immediate repetition, increment its private usage count, and return it for inclusion in the assistant response.",
     inputSchema: {
       query: z.string().optional().describe("Mood, label, category, or literal kaomoji fragment"),
       category: z.string().optional(),
+      variety: z.enum(["steady", "balanced", "fresh"]).default("balanced").describe("How widely to rotate among good matches"),
     },
-  }, async ({ query, category }) => {
-    const [picked] = await search(repository, query, category, 1);
+  }, async ({ query, category, variety }) => {
+    const candidates = await search(repository, query, category, 10);
+    const picked = selectDiverseKaomoji(candidates, recentPicks, variety as KaomojiVariety);
     if (!picked) return textResult({ found: false, message: "No matching kaomoji." });
     await repository.markUsed(picked.value);
-    return textResult({ found: true, item: { ...picked, useCount: picked.useCount + 1 } });
+    recentPicks.unshift(picked.value);
+    recentPicks.splice(6);
+    return textResult({ found: true, item: { ...picked, useCount: picked.useCount + 1, lastUsedAt: new Date().toISOString() } });
   });
 
   server.registerTool("kaomoji_add", {

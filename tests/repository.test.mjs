@@ -7,7 +7,7 @@ import test from "node:test";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createFileKaomojiRepository } from "../dist/file-repository.js";
-import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, splitKaomojiCategories } from "../dist/index.js";
+import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, selectDiverseKaomoji, splitKaomojiCategories } from "../dist/index.js";
 
 test("normalizes transport-only controls without changing the visible face", () => {
   assert.equal(normalizeKaomoji("\u200e( ´▽｀)\ufeff"), "( ´▽｀)");
@@ -22,6 +22,27 @@ test("flags stacked marks and keeps a stable-copy option", () => {
 
 test("splits multiple categories with English and Chinese punctuation", () => {
   assert.deepEqual(splitKaomojiCategories("傲娇, 猫猫，开心、可爱/害羞"), ["傲娇", "猫猫", "开心", "可爱", "害羞"]);
+});
+
+test("merges legacy English labels into the Chinese taxonomy", () => {
+  assert.deepEqual(normalizeKaomojiCategories(["shy", "害羞", "studying", "happy"]), ["害羞", "学习", "开心"]);
+});
+
+test("orders category tabs by private usage before fallback taxonomy", () => {
+  const items = [
+    { value: "a", categories: ["丑陋"], favorite: false, useCount: 0, compatibility: "stable", compatibilityNotes: [] },
+    { value: "b", categories: ["猫猫"], favorite: false, useCount: 3, compatibility: "stable", compatibilityNotes: [] },
+    { value: "c", categories: ["可爱"], favorite: false, useCount: 0, compatibility: "stable", compatibilityNotes: [] },
+  ];
+  assert.deepEqual(rankKaomojiCategories(items), ["猫猫", "可爱", "丑陋"]);
+});
+
+test("rotates AI picks away from the immediately repeated face", () => {
+  const items = [
+    { value: "a", categories: ["开心"], favorite: true, useCount: 20, compatibility: "stable", compatibilityNotes: [] },
+    { value: "b", categories: ["开心"], favorite: false, useCount: 2, compatibility: "stable", compatibilityNotes: [] },
+  ];
+  assert.equal(selectDiverseKaomoji(items, ["a"], "balanced", () => 0)?.value, "b");
 });
 
 test("stores categories, favourites and hidden usage ranking locally", async () => {
@@ -61,6 +82,7 @@ test("persists a private file library atomically", async (context) => {
   const saved = JSON.parse(await readFile(file, "utf8"));
   const item = saved.items.find((candidate) => candidate.value === "(file-test)");
   assert.equal(item.useCount, 1);
+  assert.ok(item.lastUsedAt);
   assert.equal(item.favorite, true);
   assert.deepEqual(item.categories, ["开心", "猫猫"]);
   const defaultValue = (await repository.list())[0].value;
@@ -85,9 +107,12 @@ test("exposes searchable MCP tools and increments hidden use frequency", async (
   const tools = await client.listTools();
   assert.ok(tools.tools.some((tool) => tool.name === "kaomoji_pick"));
   await client.callTool({ name: "kaomoji_add", arguments: { value: "(mcp-test)", categories: ["开心"], label: "mcp happy" } });
-  const result = await client.callTool({ name: "kaomoji_pick", arguments: { query: "mcp happy" } });
-  const text = result.content.find((part) => part.type === "text")?.text;
-  assert.equal(JSON.parse(text).item.value, "(mcp-test)");
+  await client.callTool({ name: "kaomoji_add", arguments: { value: "(mcp-test-2)", categories: ["开心"], label: "mcp happy" } });
+  const first = await client.callTool({ name: "kaomoji_pick", arguments: { query: "mcp happy" } });
+  const second = await client.callTool({ name: "kaomoji_pick", arguments: { query: "mcp happy" } });
+  const firstValue = JSON.parse(first.content.find((part) => part.type === "text")?.text).item.value;
+  const secondValue = JSON.parse(second.content.find((part) => part.type === "text")?.text).item.value;
+  assert.notEqual(firstValue, secondValue);
   const saved = JSON.parse(await readFile(file, "utf8"));
-  assert.equal(saved.items.find((item) => item.value === "(mcp-test)").useCount, 1);
+  assert.equal(saved.items.filter((item) => item.label === "mcp happy").reduce((sum, item) => sum + item.useCount, 0), 2);
 });

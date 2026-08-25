@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { rankKaomojiCategories } from "./repository.js";
 import type { KaomojiAcceptedVersion, KaomojiCandidate, KaomojiItem, KaomojiRepository, KaomojiReviewRepository } from "./types.js";
 
 type KaomojiDrawerProps = {
@@ -32,7 +33,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
   useEffect(() => { void refresh(); }, [repository]);
   useEffect(() => { void refreshCandidates(); }, [reviewRepository]);
 
-  const categories = useMemo(() => [...new Set(items.flatMap((item) => item.categories))], [items]);
+  const categories = useMemo(() => rankKaomojiCategories(items), [items]);
   const visible = items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase()))));
   const insert = async (item: KaomojiItem) => { onInsert(item.value); await repository.markUsed(item.value); void refresh(); };
   const save = async () => {

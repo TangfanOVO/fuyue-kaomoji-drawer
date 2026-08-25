@@ -1,5 +1,6 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
 import { useEffect, useMemo, useState } from "react";
+import { rankKaomojiCategories } from "./repository.js";
 export function splitKaomojiCategories(value) {
     return [...new Set(value.split(/[,，、/]+/).map((part) => part.trim()).filter(Boolean))].slice(0, 8);
 }
@@ -21,7 +22,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
     });
     useEffect(() => { void refresh(); }, [repository]);
     useEffect(() => { void refreshCandidates(); }, [reviewRepository]);
-    const categories = useMemo(() => [...new Set(items.flatMap((item) => item.categories))], [items]);
+    const categories = useMemo(() => rankKaomojiCategories(items), [items]);
     const visible = items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase()))));
     const insert = async (item) => { onInsert(item.value); await repository.markUsed(item.value); void refresh(); };
     const save = async () => {

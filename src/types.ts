@@ -6,6 +6,7 @@ export type KaomojiItem = {
   categories: string[];
   favorite: boolean;
   useCount: number;
+  lastUsedAt?: string;
   compatibility: KaomojiCompatibility;
   compatibilityNotes: string[];
   safeValue?: string;

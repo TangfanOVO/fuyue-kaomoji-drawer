@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import { analyzeKaomoji, decodeKaomojiState, hydrateKaomojiState, normalizeKaomoji } from "./repository.js";
+import { analyzeKaomoji, decodeKaomojiState, hydrateKaomojiState, normalizeKaomoji, normalizeKaomojiCategories } from "./repository.js";
 export function defaultKaomojiPath() {
     return resolve(process.env.FUYUE_KAOMOJI_PATH || resolve(homedir(), ".fuyue-kaomoji", "kaomoji.json"));
 }
@@ -40,9 +40,10 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
             const saved = {
                 ...analysis,
                 label: label?.trim() || previous?.label,
-                categories: [...new Set(categories.map((category) => category.trim()).filter(Boolean))].slice(0, 8),
+                categories: normalizeKaomojiCategories(categories),
                 favorite: previous?.favorite ?? false,
                 useCount: previous?.useCount ?? 0,
+                lastUsedAt: previous?.lastUsedAt,
             };
             await write({ ...state, items: [saved, ...state.items.filter((item) => item.value !== saved.value)], removed: state.removed.filter((item) => item !== saved.value) });
             return saved;
@@ -55,7 +56,7 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
         async markUsed(value) {
             const state = await readState();
             const clean = normalizeKaomoji(value);
-            await write({ ...state, items: state.items.map((item) => item.value === clean ? { ...item, useCount: item.useCount + 1 } : item) });
+            await write({ ...state, items: state.items.map((item) => item.value === clean ? { ...item, useCount: item.useCount + 1, lastUsedAt: new Date().toISOString() } : item) });
         },
         async setFavorite(value, favorite) {
             const state = await readState();
