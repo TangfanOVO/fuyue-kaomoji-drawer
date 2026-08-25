@@ -25,4 +25,4 @@ await Promise.all([
   writeFile(resolve(catalogDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
 ]);
 
-console.log(`catalog ${manifest.libraryVersion}: ${items.length} entries`);
+console.error(`catalog ${manifest.libraryVersion}: ${items.length} entries`);

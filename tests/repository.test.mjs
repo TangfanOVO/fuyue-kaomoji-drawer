@@ -9,6 +9,12 @@ import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createFileKaomojiRepository } from "../dist/file-repository.js";
 import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, readKaomojiCatalogSyncState, selectDiverseKaomoji, shouldAutomaticallySync, splitKaomojiCategories, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "../dist/index.js";
 
+test("installs from GitHub without requiring a local TypeScript compiler", async () => {
+  const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(packageJson.scripts?.prepare, undefined);
+  assert.ok(packageJson.files.includes("dist"));
+});
+
 test("normalizes transport-only controls without changing the visible face", () => {
   assert.equal(normalizeKaomoji("\u200e( ´▽｀)\ufeff"), "( ´▽｀)");
 });

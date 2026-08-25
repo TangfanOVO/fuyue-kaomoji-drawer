@@ -1,6 +1,6 @@
 {
   "name": "@fuyue/kaomoji-drawer",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Local-first React kaomoji drawer and optional MCP server with hidden usage ranking, manual curation and Unicode compatibility hints.",
   "type": "module",
   "license": "MIT",
@@ -33,8 +33,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/build-catalog.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "npm run build && node --test tests/*.mjs",
-    "prepare": "npm run build"
+    "test": "npm run build && node --test tests/*.mjs"
   },
   "peerDependencies": {
     "react": ">=18"

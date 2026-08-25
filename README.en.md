@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1
 ```
 
 ## React integration
@@ -71,7 +71,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -93,7 +93,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.0"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.4.1"]
     }
   }
 }
