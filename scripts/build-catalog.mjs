@@ -11,17 +11,20 @@ const items = defaultKaomojiItems().map(({ value, label, categories }) => ({
   ...(label ? { label } : {}),
   categories,
 }));
+const values = items.map(({ value }) => value);
 const manifest = {
   schemaVersion: 1,
   libraryVersion: String(packageJson.version),
   generatedAt: new Date().toISOString(),
   itemCount: items.length,
   itemsUrl: "./kaomoji.json",
+  valuesUrl: "./kaomoji-values.json",
 };
 
 await mkdir(catalogDirectory, { recursive: true });
 await Promise.all([
   writeFile(resolve(catalogDirectory, "kaomoji.json"), `${JSON.stringify(items, null, 2)}\n`, "utf8"),
+  writeFile(resolve(catalogDirectory, "kaomoji-values.json"), `${JSON.stringify(values, null, 2)}\n`, "utf8"),
   writeFile(resolve(catalogDirectory, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8"),
 ]);
 

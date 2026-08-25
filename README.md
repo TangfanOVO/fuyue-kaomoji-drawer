@@ -17,13 +17,13 @@
 ## 从 GitHub 安装
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 也可以固定到发布版本：
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 ## React 接入
@@ -49,7 +49,7 @@ const repository = createLocalKaomojiRepository();
 ```html
 <textarea id="message"></textarea>
 <div id="kaomoji-drawer"></div>
-<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.0/dist/standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.1/dist/standalone.js"></script>
 <script>FuyueKaomoji.mount("#kaomoji-drawer", { input: "#message" });</script>
 ```
 
@@ -77,6 +77,8 @@ const repository = createLocalKaomojiRepository();
 
 传入 `catalog={false}` 可以完全隐藏同步控件。公共清单格式见 [`catalog/manifest.json`](./catalog/manifest.json)。
 
+想完全自己分类或导入别的系统，可以直接取 [`catalog/kaomoji-values.json`](./catalog/kaomoji-values.json)：它只包含原始颜文字字符串，不附带本项目的分类、标签或兼容性判断。使用 JSON 数组而不是逐行文本，是为了让带换行的字符画仍保持为一枚完整颜文字。
+
 ## 给 AI 使用：可选 MCP
 
 MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文字，再把它放进自己的回复；选用次数会写进本地 JSON，常用项随后自然靠前。
@@ -84,7 +86,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -106,7 +108,7 @@ npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/t
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz"]
+      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz"]
     }
   }
 }

@@ -37,6 +37,7 @@ export type KaomojiCatalogManifest = {
   generatedAt: string;
   itemCount: number;
   itemsUrl: string;
+  valuesUrl?: string;
 };
 
 export type KaomojiCatalogSyncMode = "manual" | "automatic" | "off";

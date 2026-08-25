@@ -97,6 +97,16 @@ test("ships a non-empty reviewed library and merges duplicate category tags", ()
   assert.equal(new Set(items.map((item) => item.value)).size, items.length);
 });
 
+test("ships an unclassified values-only catalog without losing multiline art", async () => {
+  const values = JSON.parse(await readFile(new URL("../catalog/kaomoji-values.json", import.meta.url), "utf8"));
+  const manifest = JSON.parse(await readFile(new URL("../catalog/manifest.json", import.meta.url), "utf8"));
+  assert.equal(values.length, defaultKaomojiItems().length);
+  assert.equal(new Set(values).size, values.length);
+  assert.ok(values.every((value) => typeof value === "string" && value.length > 0));
+  assert.deepEqual(JSON.parse(JSON.stringify(["first line\nsecond line"])), ["first line\nsecond line"]);
+  assert.equal(manifest.valuesUrl, "./kaomoji-values.json");
+});
+
 test("shows stable default faces before unused limited-compatibility faces", async () => {
   const values = new Map();
   globalThis.window = { localStorage: { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) } };

@@ -1,6 +1,6 @@
 {
   "name": "@fuyue/kaomoji-drawer",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Local-first React kaomoji drawer and optional MCP server with hidden usage ranking, manual curation and Unicode compatibility hints.",
   "type": "module",
   "license": "MIT",
@@ -12,7 +12,16 @@
   "bugs": {
     "url": "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/issues"
   },
-  "keywords": ["kaomoji", "react", "unicode", "emoji-picker", "local-first", "pwa", "mcp", "ai-companion"],
+  "keywords": [
+    "kaomoji",
+    "react",
+    "unicode",
+    "emoji-picker",
+    "local-first",
+    "pwa",
+    "mcp",
+    "ai-companion"
+  ],
   "bin": {
     "fuyue-kaomoji-mcp": "./dist/mcp-cli.js"
   },
@@ -30,7 +39,16 @@
     "./standalone.js": "./dist/standalone.js",
     "./styles.css": "./src/styles.css"
   },
-  "files": ["catalog", "dist", "examples", "src/styles.css", "README.md", "README.en.md", "LICENSE", "THIRD_PARTY_NOTICES.md"],
+  "files": [
+    "catalog",
+    "dist",
+    "examples",
+    "src/styles.css",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json && npm run build:standalone && node scripts/build-catalog.mjs",
     "build:standalone": "esbuild src/standalone.tsx --bundle --minify --format=iife --target=es2020 --outfile=dist/standalone.js --loader:.css=text",

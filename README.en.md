@@ -17,13 +17,13 @@ The primary entry point is a React component that can be installed in one comman
 ## Install from GitHub
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 ## React integration
@@ -49,7 +49,7 @@ No React project, npm, or bundler is required. Add an input and a mount target, 
 ```html
 <textarea id="message"></textarea>
 <div id="kaomoji-drawer"></div>
-<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.0/dist/standalone.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.1/dist/standalone.js"></script>
 <script>FuyueKaomoji.mount("#kaomoji-drawer", { input: "#message" });</script>
 ```
 
@@ -77,6 +77,8 @@ Use a private mirror or a different curated feed by replacing the manifest URL:
 
 Pass `catalog={false}` to remove the sync controls entirely. The public contract is documented by [`catalog/manifest.json`](./catalog/manifest.json).
 
+For fully custom classification or imports, use [`catalog/kaomoji-values.json`](./catalog/kaomoji-values.json). It contains only the original kaomoji strings, without this project's categories, labels, or compatibility judgement. A JSON array is used instead of one-value-per-line text so multiline ASCII art remains one intact item.
+
 ## Optional MCP for AI clients
 
 The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives the selected kaomoji, and includes it in its own response. The local usage count is updated at the same time.
@@ -84,7 +86,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
+npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -106,7 +108,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz"]
+      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.1.tar.gz"]
     }
   }
 }
