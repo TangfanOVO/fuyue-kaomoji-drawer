@@ -9,6 +9,24 @@ export type KaomojiItem = {
     compatibilityNotes: string[];
     safeValue?: string;
 };
+export type KaomojiCandidate = {
+    id: string | number;
+    value: string;
+    label?: string;
+    suggestedCategories: string[];
+    compatibility: KaomojiCompatibility;
+    compatibilityNotes: string[];
+    safeValue?: string;
+};
+export type KaomojiReviewDecision = "approved" | "rejected";
+export type KaomojiAcceptedVersion = "original" | "compatible";
+export interface KaomojiReviewRepository {
+    listCandidates(): Promise<KaomojiCandidate[]>;
+    reviewCandidate(id: KaomojiCandidate["id"], decision: KaomojiReviewDecision, options?: {
+        acceptedVersion?: KaomojiAcceptedVersion;
+        categories?: string[];
+    }): Promise<void>;
+}
 export interface KaomojiRepository {
     list(): Promise<KaomojiItem[]>;
     upsert(value: string, categories: string[], label?: string): Promise<KaomojiItem>;

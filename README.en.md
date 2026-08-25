@@ -2,7 +2,7 @@
 
 [简体中文](./README.md) · [English](./README.en.md)
 
-A local-first React kaomoji drawer with an optional MCP server for AI companions and desktop clients. It supports manual add/remove, multiple categories, favourites, hidden usage-frequency ranking, Unicode compatibility hints, and a safer-copy fallback for fragile glyph combinations.
+A local-first React kaomoji drawer with an optional MCP server for AI companions and desktop clients. It ships with 325 deduplicated public kaomoji instead of an empty drawer, and supports manual add/remove, multiple categories per record, favourites, hidden usage-frequency ranking, and Unicode compatibility hints.
 
 The primary entry point is a React component that can be installed in one command. The MCP server is optional: regular users do not need to deploy a backend, while AI clients can search, pick, curate, and learn from local usage through standard tools.
 
@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
 ```
 
 ## React integration
@@ -49,7 +49,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -71,13 +71,13 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0"]
     }
   }
 }
 ```
 
-The default data file is `~/.fuyue-kaomoji/kaomoji.json`. Set `FUYUE_KAOMOJI_PATH` to use another path.
+The default data file is `~/.fuyue-kaomoji/kaomoji.json`. The bundled 325-entry library is available on first run, and existing six-item starter files are filled out automatically after upgrading. Set `FUYUE_KAOMOJI_PATH` to use another path.
 
 Available tools:
 
@@ -116,6 +116,8 @@ const repository: KaomojiRepository = {
 };
 ```
 
+If your backend also maintains a fetched review queue, implement the optional `KaomojiReviewRepository` and pass it as `reviewRepository`. The drawer then exposes reject, keep-original, and keep-compatible actions. One kaomoji can belong to multiple categories separated by English or Chinese commas, ideographic commas, or slashes.
+
 Remote collection and automatic review belong in your own repository/backend adapter. Preserve sources and licences; auto-approve entries only when both provenance and cross-device rendering are reliable, and send uncertain glyphs or categories to a review queue.
 
 ## Unicode compatibility
@@ -140,6 +142,6 @@ Requires Node.js 20 or newer. The MCP server uses the official TypeScript SDK v2
 
 ## Acknowledgements
 
-Inspired by [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit). This is an independent React/TypeScript implementation and does not copy its Swift source or default dataset.
+The interaction design and part of the starter data are derived from [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit) under the MIT License; see [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md). The React/TypeScript component is an independent implementation.
 
 Licence: [MIT](./LICENSE). Personal and commercial use, modification, distribution, and sublicensing are permitted; retain the copyright and licence notice.

@@ -7,7 +7,7 @@ import test from "node:test";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createFileKaomojiRepository } from "../dist/file-repository.js";
-import { analyzeKaomoji, createLocalKaomojiRepository, normalizeKaomoji } from "../dist/index.js";
+import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, splitKaomojiCategories } from "../dist/index.js";
 
 test("normalizes transport-only controls without changing the visible face", () => {
   assert.equal(normalizeKaomoji("\u200e( ´▽｀)\ufeff"), "( ´▽｀)");
@@ -18,6 +18,10 @@ test("flags stacked marks and keeps a stable-copy option", () => {
   assert.equal(result.compatibility, "limited");
   assert.ok(result.compatibilityNotes.some((note) => note.includes("黑条")));
   assert.equal(result.safeValue, "a");
+});
+
+test("splits multiple categories with English and Chinese punctuation", () => {
+  assert.deepEqual(splitKaomojiCategories("傲娇, 猫猫，开心、可爱/害羞"), ["傲娇", "猫猫", "开心", "可爱", "害羞"]);
 });
 
 test("stores categories, favourites and hidden usage ranking locally", async () => {
@@ -39,6 +43,13 @@ test("stores categories, favourites and hidden usage ranking locally", async () 
   assert.equal(items.find((item) => item.value === "(test-b)")?.useCount, 1);
 });
 
+test("ships a non-empty reviewed library and merges duplicate category tags", () => {
+  const items = defaultKaomojiItems();
+  assert.equal(items.length, 325);
+  assert.ok(items.some((item) => item.categories.length > 1));
+  assert.equal(new Set(items.map((item) => item.value)).size, items.length);
+});
+
 test("persists a private file library atomically", async (context) => {
   const directory = await mkdtemp(join(tmpdir(), "fuyue-kaomoji-"));
   context.after(() => rm(directory, { recursive: true, force: true }));
@@ -48,10 +59,13 @@ test("persists a private file library atomically", async (context) => {
   await repository.markUsed("(file-test)");
   await repository.setFavorite("(file-test)", true);
   const saved = JSON.parse(await readFile(file, "utf8"));
-  const item = saved.find((candidate) => candidate.value === "(file-test)");
+  const item = saved.items.find((candidate) => candidate.value === "(file-test)");
   assert.equal(item.useCount, 1);
   assert.equal(item.favorite, true);
   assert.deepEqual(item.categories, ["开心", "猫猫"]);
+  const defaultValue = (await repository.list())[0].value;
+  await repository.remove(defaultValue);
+  assert.equal((await repository.list()).some((candidate) => candidate.value === defaultValue), false);
 });
 
 test("exposes searchable MCP tools and increments hidden use frequency", async (context) => {
@@ -75,5 +89,5 @@ test("exposes searchable MCP tools and increments hidden use frequency", async (
   const text = result.content.find((part) => part.type === "text")?.text;
   assert.equal(JSON.parse(text).item.value, "(mcp-test)");
   const saved = JSON.parse(await readFile(file, "utf8"));
-  assert.equal(saved.find((item) => item.value === "(mcp-test)").useCount, 1);
+  assert.equal(saved.items.find((item) => item.value === "(mcp-test)").useCount, 1);
 });

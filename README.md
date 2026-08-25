@@ -2,7 +2,7 @@
 
 [简体中文](./README.md) · [English](./README.en.md)
 
-一个可以直接塞进聊天输入区的 React 颜文字抽屉，加上一层可选的本地 MCP 服务。默认只使用用户自己的本地存储；支持手动添加/删除、多重分类、收藏、隐藏的使用频率排序、Unicode 跨设备风险提醒，以及较稳定的兼容版复制。
+一个可以直接塞进聊天输入区的 React 颜文字抽屉，加上一层可选的本地 MCP 服务。安装后自带 325 枚已去重的公共颜文字，不是空抽屉；支持手动添加/删除、一枚同时归入多个分类、收藏、隐藏的使用频率排序和 Unicode 跨设备风险提醒。
 
 它的主入口仍是**前端组件 / 一条命令接入**。MCP 是给 AI companion 和桌面客户端的可选入口，不要求普通用户部署服务器。需要团队数据库、REST API 或 SQLite 时，只要实现同一个 `KaomojiRepository` 接口，无需重写界面或工具定义。
 
@@ -23,7 +23,7 @@ npm install github:TangfanOVO/fuyue-kaomoji-drawer
 也可以固定到发布版本：
 
 ```bash
-npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
+npm install github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
 ```
 
 ## React 接入
@@ -49,7 +49,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
+npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -71,13 +71,13 @@ npm install -g github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.1.1"]
+      "args": ["-y", "github:TangfanOVO/fuyue-kaomoji-drawer#v0.2.0"]
     }
   }
 }
 ```
 
-默认数据文件是 `~/.fuyue-kaomoji/kaomoji.json`。可用环境变量 `FUYUE_KAOMOJI_PATH` 指向另一份 JSON。工具包括：
+默认数据文件是 `~/.fuyue-kaomoji/kaomoji.json`。首次运行即会读到包内的 325 枚默认库；旧版的 6 枚起始数据也会自动补齐。可用环境变量 `FUYUE_KAOMOJI_PATH` 指向另一份 JSON。工具包括：
 
 - `kaomoji_search`：按情绪、名称、分类或颜文字片段搜索；
 - `kaomoji_pick`：选择最高排序结果并累计隐藏频率；
@@ -114,6 +114,8 @@ const repository: KaomojiRepository = {
 };
 ```
 
+如果后端还有自动抓取候选箱，再实现可选的 `KaomojiReviewRepository` 并传给 `reviewRepository`。抽屉会显示“不收 / 收原版 / 收兼容版”，同一枚颜文字可用中文逗号、英文逗号、顿号或斜杠同时归入多个分类。
+
 远程抓取与自动审批应放在你自己的 repository/backend 适配层：保留来源和许可证；可信且跨设备稳定的条目可以自动入库，罕见字形、分类存疑或来源不清的条目应进入人工候选箱。不要把未经审核的网页集合静默发布给所有用户。
 
 ## Unicode 兼容说明
@@ -138,6 +140,6 @@ npm test
 
 ## 致谢
 
-设计灵感来自 [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit)。本实现是独立的 React/TypeScript 组件，并未复制其 Swift 源码或默认数据集。
+交互灵感与部分默认数据来自 [Pyruslili/KaomojiDrawerKit](https://github.com/Pyruslili/KaomojiDrawerKit)，依 MIT 许可使用；详见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。React/TypeScript 组件为独立实现。
 
 许可证：[MIT](./LICENSE)。允许个人与商业使用、修改、分发和再许可；请保留版权与许可证声明。
