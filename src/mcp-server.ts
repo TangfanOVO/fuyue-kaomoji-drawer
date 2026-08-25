@@ -1,0 +1,109 @@
+import { McpServer } from "@modelcontextprotocol/server";
+import { z } from "zod/v4";
+import { analyzeKaomoji } from "./repository.js";
+import { createFileKaomojiRepository, defaultKaomojiPath } from "./file-repository.js";
+import type { KaomojiItem, KaomojiRepository } from "./types.js";
+
+function textResult(value: unknown) {
+  return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
+}
+
+function score(item: KaomojiItem, query: string, category?: string) {
+  const needle = query.toLocaleLowerCase();
+  const haystack = [item.value, item.label, ...item.categories].filter(Boolean).join(" ").toLocaleLowerCase();
+  const matched = !needle || haystack.includes(needle);
+  const categoryMatched = !category || item.categories.includes(category);
+  if (!matched || !categoryMatched || item.compatibility === "blocked") return Number.NEGATIVE_INFINITY;
+  return Number(item.favorite) * 100_000 + item.useCount * 100 + (item.compatibility === "stable" ? 10 : 0);
+}
+
+async function search(repository: KaomojiRepository, query = "", category?: string, limit = 12) {
+  return (await repository.list())
+    .map((item) => ({ item, score: score(item, query.trim(), category?.trim()) }))
+    .filter(({ score: value }) => Number.isFinite(value))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(1, Math.min(limit, 50)))
+    .map(({ item }) => item);
+}
+
+export type BuildKaomojiMcpOptions = {
+  repository?: KaomojiRepository;
+  filePath?: string;
+};
+
+export function buildKaomojiMcpServer(options: BuildKaomojiMcpOptions = {}) {
+  const repository = options.repository ?? createFileKaomojiRepository(options.filePath);
+  const server = new McpServer({ name: "fuyue-kaomoji", version: "0.1.0" });
+
+  server.registerTool("kaomoji_search", {
+    title: "Search kaomoji",
+    description: "Search the local kaomoji library by visible face, label, or category. Results are ranked by favourite and hidden usage frequency.",
+    inputSchema: {
+      query: z.string().optional().describe("Mood, label, category, or literal kaomoji fragment"),
+      category: z.string().optional(),
+      limit: z.number().int().min(1).max(50).default(12),
+    },
+  }, async ({ query, category, limit }) => textResult({ items: await search(repository, query, category, limit) }));
+
+  server.registerTool("kaomoji_pick", {
+    title: "Pick and use a kaomoji",
+    description: "Choose the highest-ranked matching kaomoji, increment its private usage count, and return it for inclusion in the assistant response.",
+    inputSchema: {
+      query: z.string().optional().describe("Mood, label, category, or literal kaomoji fragment"),
+      category: z.string().optional(),
+    },
+  }, async ({ query, category }) => {
+    const [picked] = await search(repository, query, category, 1);
+    if (!picked) return textResult({ found: false, message: "No matching kaomoji." });
+    await repository.markUsed(picked.value);
+    return textResult({ found: true, item: { ...picked, useCount: picked.useCount + 1 } });
+  });
+
+  server.registerTool("kaomoji_add", {
+    title: "Add or update a kaomoji",
+    description: "Add a kaomoji to the private local library, merge duplicate values, and classify it into one or more categories.",
+    inputSchema: {
+      value: z.string().min(1).max(300),
+      categories: z.array(z.string().min(1).max(40)).min(1).max(8),
+      label: z.string().max(80).optional(),
+    },
+  }, async ({ value, categories, label }) => textResult({ item: await repository.upsert(value, categories, label) }));
+
+  server.registerTool("kaomoji_remove", {
+    title: "Remove a kaomoji",
+    description: "Delete an exact kaomoji value from the private local library.",
+    inputSchema: { value: z.string().min(1).max(300) },
+  }, async ({ value }) => {
+    await repository.remove(value);
+    return textResult({ removed: true, value: analyzeKaomoji(value).value });
+  });
+
+  server.registerTool("kaomoji_favorite", {
+    title: "Favourite or unfavourite a kaomoji",
+    description: "Change whether an exact kaomoji value is ranked as a favourite.",
+    inputSchema: { value: z.string().min(1).max(300), favorite: z.boolean() },
+  }, async ({ value, favorite }) => {
+    await repository.setFavorite(value, favorite);
+    return textResult({ value: analyzeKaomoji(value).value, favorite });
+  });
+
+  server.registerTool("kaomoji_inspect", {
+    title: "Inspect kaomoji compatibility",
+    description: "Check a kaomoji for transport controls, stacked combining marks, rare glyphs, and an optional safer copy without saving it.",
+    inputSchema: { value: z.string().min(1).max(300) },
+  }, async ({ value }) => textResult(analyzeKaomoji(value)));
+
+  server.registerResource("kaomoji-library", "kaomoji://library", {
+    title: "Local kaomoji library",
+    description: "Private local kaomoji library without a public usage dashboard.",
+    mimeType: "application/json",
+  }, async () => ({
+    contents: [{
+      uri: "kaomoji://library",
+      mimeType: "application/json",
+      text: JSON.stringify({ storagePath: options.filePath ?? defaultKaomojiPath(), items: await repository.list() }, null, 2),
+    }],
+  }));
+
+  return server;
+}
