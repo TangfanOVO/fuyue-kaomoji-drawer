@@ -29,7 +29,7 @@ export function createFileKaomojiRepository(filePath = defaultKaomojiPath()) {
     };
     return {
         async list() {
-            return (await readState()).items.sort((a, b) => Number(b.favorite) - Number(a.favorite)
+            return [...(await readState()).items].sort((a, b) => Number(b.favorite) - Number(a.favorite)
                 || b.useCount - a.useCount
                 || ({ stable: 0, limited: 1, blocked: 2 }[a.compatibility] - { stable: 0, limited: 1, blocked: 2 }[b.compatibility]));
         },

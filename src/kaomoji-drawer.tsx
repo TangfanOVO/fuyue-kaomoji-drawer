@@ -11,6 +11,8 @@ type KaomojiDrawerProps = {
   catalog?: KaomojiCatalogOptions | false;
 };
 
+export const initialKaomojiRenderLimit = 96;
+
 export function splitKaomojiCategories(value: string) {
   return [...new Set(value.split(/[,，、/]+/).map((part) => part.trim()).filter(Boolean))].slice(0, 8);
 }
@@ -34,6 +36,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
   const [catalogBusy, setCatalogBusy] = useState(false);
   const [catalogMessage, setCatalogMessage] = useState("");
   const [catalogError, setCatalogError] = useState("");
+  const [renderLimit, setRenderLimit] = useState(initialKaomojiRenderLimit);
 
   const refresh = () => repository.list().then(setItems);
   const refreshCandidates = () => reviewRepository?.listCandidates().then((next) => {
@@ -45,6 +48,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
     void repository.getCategoryOrder?.().then(setCategoryOrder);
   }, [repository]);
   useEffect(() => { void refreshCandidates(); }, [reviewRepository]);
+  useEffect(() => { setRenderLimit(initialKaomojiRenderLimit); }, [category, manageView, managing, query]);
 
   const runCatalogSync = useCallback(async () => {
     if (catalog === false || catalogBusy) return;
@@ -88,7 +92,8 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
   };
 
   const categories = useMemo(() => rankKaomojiCategories(items, categoryOrder), [categoryOrder, items]);
-  const visible = items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase()))));
+  const visible = useMemo(() => items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase())))), [category, items, query]);
+  const renderedItems = visible.slice(0, renderLimit);
   const insert = async (item: KaomojiItem) => { onInsert(item.value); await repository.markUsed(item.value); void refresh(); };
   const save = async () => {
     if (!newValue.trim()) return;
@@ -168,11 +173,12 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
     </div> : <>
       <input className="fy-kaomoji-search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索心情、形状或分类"/>
       <nav><button className={!category ? "current" : ""} onClick={() => setCategory("")}>全部</button>{categories.map((value) => <button className={category === value ? "current" : ""} key={value} onClick={() => setCategory(value)}>{value}</button>)}</nav>
-      <div className="fy-kaomoji-grid">{visible.map((item) => <article className={item.categories.includes("字符画") ? "ascii-art" : ""} key={item.value}>
+      <div className="fy-kaomoji-grid">{renderedItems.map((item) => <article className={item.categories.includes("字符画") ? "ascii-art" : ""} key={item.value}>
         <button className="fy-kaomoji-value" onClick={() => void insert(item)} title={item.compatibilityNotes.join("；")}>{item.value}</button>
         {item.compatibility !== "stable" && <span>易乱码</span>}
-        {managing ? <button className="fy-kaomoji-remove" onClick={async () => { await repository.remove(item.value); void refresh(); }} aria-label="删除">×</button> : <button className="fy-kaomoji-star" onClick={async () => { await repository.setFavorite(item.value, !item.favorite); void refresh(); }} aria-label="收藏">{item.favorite ? "★" : "☆"}</button>}
+        {managing ? <button className="fy-kaomoji-remove" onClick={async () => { await repository.remove(item.value); void refresh(); }} aria-label="删除">×</button> : <button className={`fy-kaomoji-star${item.favorite ? " is-favorite" : ""}`} onClick={async () => { await repository.setFavorite(item.value, !item.favorite); void refresh(); }} aria-label={item.favorite ? "取消收藏" : "收藏"} aria-pressed={item.favorite}>{item.favorite ? "★" : "☆"}</button>}
       </article>)}</div>
+      {renderedItems.length < visible.length && <button className="fy-kaomoji-more" onClick={() => setRenderLimit((current) => current + initialKaomojiRenderLimit)}>再显示 {Math.min(initialKaomojiRenderLimit, visible.length - renderedItems.length)} 枚</button>}
     </>}
   </section>;
 }

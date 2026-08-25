@@ -2,6 +2,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { readKaomojiCatalogSyncState, shouldAutomaticallySync, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "./catalog-sync.js";
 import { rankKaomojiCategories } from "./repository.js";
+export const initialKaomojiRenderLimit = 96;
 export function splitKaomojiCategories(value) {
     return [...new Set(value.split(/[,，、/]+/).map((part) => part.trim()).filter(Boolean))].slice(0, 8);
 }
@@ -24,6 +25,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
     const [catalogBusy, setCatalogBusy] = useState(false);
     const [catalogMessage, setCatalogMessage] = useState("");
     const [catalogError, setCatalogError] = useState("");
+    const [renderLimit, setRenderLimit] = useState(initialKaomojiRenderLimit);
     const refresh = () => repository.list().then(setItems);
     const refreshCandidates = () => reviewRepository?.listCandidates().then((next) => {
         setCandidates(next);
@@ -34,6 +36,7 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
         void repository.getCategoryOrder?.().then(setCategoryOrder);
     }, [repository]);
     useEffect(() => { void refreshCandidates(); }, [reviewRepository]);
+    useEffect(() => { setRenderLimit(initialKaomojiRenderLimit); }, [category, manageView, managing, query]);
     const runCatalogSync = useCallback(async () => {
         if (catalog === false || catalogBusy)
             return;
@@ -77,7 +80,8 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
         setCatalogError("");
     };
     const categories = useMemo(() => rankKaomojiCategories(items, categoryOrder), [categoryOrder, items]);
-    const visible = items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase()))));
+    const visible = useMemo(() => items.filter((item) => (!category || item.categories.includes(category)) && (!query || [item.value, item.label || "", ...item.categories].some((part) => part.toLowerCase().includes(query.toLowerCase())))), [category, items, query]);
+    const renderedItems = visible.slice(0, renderLimit);
     const insert = async (item) => { onInsert(item.value); await repository.markUsed(item.value); void refresh(); };
     const save = async () => {
         if (!newValue.trim())
@@ -130,5 +134,5 @@ export function KaomojiDrawer({ repository, reviewRepository, onInsert, title = 
                     const key = String(candidate.id);
                     const busy = busyCandidate === key;
                     return _jsxs("article", { className: "fy-kaomoji-candidate", children: [_jsx("strong", { children: candidate.value }), candidate.compatibility !== "stable" && _jsx("small", { children: candidate.compatibilityNotes.join("；") || "跨设备可能易乱码" }), candidate.safeValue && _jsxs("div", { children: [_jsx("span", { children: "\u517C\u5BB9\u7248" }), _jsx("b", { children: candidate.safeValue })] }), _jsxs("label", { children: [_jsx("span", { children: "\u5206\u7C7B\uFF08\u53EF\u591A\u4E2A\uFF09" }), _jsx("input", { value: candidateCategories[key] ?? candidate.suggestedCategories.join("，"), onChange: (event) => setCandidateCategories((current) => ({ ...current, [key]: event.target.value })) })] }), _jsxs("footer", { className: candidate.safeValue ? "has-compatible" : "", children: [_jsx("button", { disabled: busy, onClick: () => void review(candidate, "rejected"), children: "\u4E0D\u6536" }), _jsx("button", { disabled: busy, onClick: () => void review(candidate, "approved", "original"), children: "\u6536\u539F\u7248" }), candidate.safeValue && _jsx("button", { disabled: busy, onClick: () => void review(candidate, "approved", "compatible"), children: "\u6536\u517C\u5BB9\u7248" })] })] }, key);
-                }) : _jsx("div", { className: "fy-kaomoji-empty", children: "\u5019\u9009\u7BB1\u5DF2\u7ECF\u7406\u5B8C\u5566" }) }) : _jsxs(_Fragment, { children: [_jsx("input", { className: "fy-kaomoji-search", value: query, onChange: (event) => setQuery(event.target.value), placeholder: "\u641C\u7D22\u5FC3\u60C5\u3001\u5F62\u72B6\u6216\u5206\u7C7B" }), _jsxs("nav", { children: [_jsx("button", { className: !category ? "current" : "", onClick: () => setCategory(""), children: "\u5168\u90E8" }), categories.map((value) => _jsx("button", { className: category === value ? "current" : "", onClick: () => setCategory(value), children: value }, value))] }), _jsx("div", { className: "fy-kaomoji-grid", children: visible.map((item) => _jsxs("article", { className: item.categories.includes("字符画") ? "ascii-art" : "", children: [_jsx("button", { className: "fy-kaomoji-value", onClick: () => void insert(item), title: item.compatibilityNotes.join("；"), children: item.value }), item.compatibility !== "stable" && _jsx("span", { children: "\u6613\u4E71\u7801" }), managing ? _jsx("button", { className: "fy-kaomoji-remove", onClick: async () => { await repository.remove(item.value); void refresh(); }, "aria-label": "\u5220\u9664", children: "\u00D7" }) : _jsx("button", { className: "fy-kaomoji-star", onClick: async () => { await repository.setFavorite(item.value, !item.favorite); void refresh(); }, "aria-label": "\u6536\u85CF", children: item.favorite ? "★" : "☆" })] }, item.value)) })] })] });
+                }) : _jsx("div", { className: "fy-kaomoji-empty", children: "\u5019\u9009\u7BB1\u5DF2\u7ECF\u7406\u5B8C\u5566" }) }) : _jsxs(_Fragment, { children: [_jsx("input", { className: "fy-kaomoji-search", value: query, onChange: (event) => setQuery(event.target.value), placeholder: "\u641C\u7D22\u5FC3\u60C5\u3001\u5F62\u72B6\u6216\u5206\u7C7B" }), _jsxs("nav", { children: [_jsx("button", { className: !category ? "current" : "", onClick: () => setCategory(""), children: "\u5168\u90E8" }), categories.map((value) => _jsx("button", { className: category === value ? "current" : "", onClick: () => setCategory(value), children: value }, value))] }), _jsx("div", { className: "fy-kaomoji-grid", children: renderedItems.map((item) => _jsxs("article", { className: item.categories.includes("字符画") ? "ascii-art" : "", children: [_jsx("button", { className: "fy-kaomoji-value", onClick: () => void insert(item), title: item.compatibilityNotes.join("；"), children: item.value }), item.compatibility !== "stable" && _jsx("span", { children: "\u6613\u4E71\u7801" }), managing ? _jsx("button", { className: "fy-kaomoji-remove", onClick: async () => { await repository.remove(item.value); void refresh(); }, "aria-label": "\u5220\u9664", children: "\u00D7" }) : _jsx("button", { className: `fy-kaomoji-star${item.favorite ? " is-favorite" : ""}`, onClick: async () => { await repository.setFavorite(item.value, !item.favorite); void refresh(); }, "aria-label": item.favorite ? "取消收藏" : "收藏", "aria-pressed": item.favorite, children: item.favorite ? "★" : "☆" })] }, item.value)) }), renderedItems.length < visible.length && _jsxs("button", { className: "fy-kaomoji-more", onClick: () => setRenderLimit((current) => current + initialKaomojiRenderLimit), children: ["\u518D\u663E\u793A ", Math.min(initialKaomojiRenderLimit, visible.length - renderedItems.length), " \u679A"] })] })] });
 }

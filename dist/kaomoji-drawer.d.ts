@@ -6,6 +6,7 @@ type KaomojiDrawerProps = {
     title?: string;
     catalog?: KaomojiCatalogOptions | false;
 };
+export declare const initialKaomojiRenderLimit = 96;
 export declare function splitKaomojiCategories(value: string): string[];
 export declare function KaomojiDrawer({ repository, reviewRepository, onInsert, title, catalog }: KaomojiDrawerProps): import("react").JSX.Element;
 export {};

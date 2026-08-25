@@ -17,13 +17,13 @@ The primary entry point is a React component that can be installed in one comman
 ## Install from GitHub
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 Pin a release when you need reproducible installs:
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 ## React integration
@@ -41,6 +41,19 @@ const repository = createLocalKaomojiRepository();
 ```
 
 The drawer never exposes `useCount` in the UI. Every selection increments it locally so frequently used entries naturally move toward the top.
+
+## Plain HTML / static-site integration
+
+No React project, npm, or bundler is required. Add an input and a mount target, then load the self-contained release bundle:
+
+```html
+<textarea id="message"></textarea>
+<div id="kaomoji-drawer"></div>
+<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.0/dist/standalone.js"></script>
+<script>FuyueKaomoji.mount("#kaomoji-drawer", { input: "#message" });</script>
+```
+
+The bundle includes React, the drawer, and its styles; callers no longer need to assemble CDN dependencies or an import map. Selecting a face inserts it at the current caret and emits a standard `input` event. See [`examples/standalone.html`](./examples/standalone.html) for a complete runnable page. Non-input hosts can pass `onInsert(value)` or listen for `fuyue-kaomoji-insert` on the mount target.
 
 ## Curated library subscription
 
@@ -71,7 +84,7 @@ The MCP server does not simulate clicks. An AI calls `kaomoji_pick`, receives th
 Install the pinned release globally:
 
 ```bash
-npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 Then add the command to a client that supports local stdio MCP:
@@ -93,7 +106,7 @@ Or let the client fetch the GitHub release with `npx`:
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz"]
+      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz"]
     }
   }
 }
@@ -132,13 +145,15 @@ Implement `KaomojiRepository` to connect REST, IndexedDB, SQLite, or another loc
 import type { KaomojiRepository } from "@fuyue/kaomoji-drawer";
 
 const repository: KaomojiRepository = {
-  list: () => fetch("/api/kaomoji").then((response) => response.json()).then((data) => data.items),
+  list: () => fetch("/api/kaomoji").then((response) => response.json()).then((data) => [...data.items]),
   upsert: (value, categories, label) => request("/api/kaomoji", { method: "POST", body: { value, categories, label } }),
   remove: (value) => request(`/api/kaomoji/${encodeURIComponent(value)}`, { method: "DELETE" }),
   markUsed: (value) => request("/api/kaomoji/use", { method: "POST", body: { value } }),
   setFavorite: (value, favorite) => request("/api/kaomoji/favorite", { method: "POST", body: { value, favorite } }),
 };
 ```
+
+`list()` should return a fresh array on every call so React can reliably refresh favourites, usage order, and removals. The bundled `localStorage` and JSON repositories already follow this contract.
 
 If your backend also maintains a fetched review queue, implement the optional `KaomojiReviewRepository` and pass it as `reviewRepository`. The drawer then exposes reject, keep-original, and keep-compatible actions. One kaomoji can belong to multiple categories separated by English or Chinese commas, ideographic commas, or slashes.
 

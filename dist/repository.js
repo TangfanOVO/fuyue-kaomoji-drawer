@@ -151,7 +151,7 @@ export function createLocalKaomojiRepository(storageKey = "fuyue.kaomoji.v1") {
     const write = (state) => window.localStorage.setItem(storageKey, JSON.stringify(state));
     return {
         async list() {
-            return readState().items.sort(compareKaomojiItems);
+            return [...readState().items].sort(compareKaomojiItems);
         },
         async upsert(value, categories, label) {
             const cleanCategories = normalizeKaomojiCategories(categories);

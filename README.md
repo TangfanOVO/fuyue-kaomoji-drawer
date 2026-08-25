@@ -17,13 +17,13 @@
 ## 从 GitHub 安装
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 也可以固定到发布版本：
 
 ```bash
-npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 ## React 接入
@@ -41,6 +41,19 @@ const repository = createLocalKaomojiRepository();
 ```
 
 组件不会显示 `useCount`，但每次选用都会在本地累计，并把常用项自然排到前面。
+
+## 纯 HTML / 静态网页接入
+
+没有 React 工程、npm 或打包器也能直接用。页面里准备一个输入框和容器，再加载发布版独立脚本：
+
+```html
+<textarea id="message"></textarea>
+<div id="kaomoji-drawer"></div>
+<script src="https://cdn.jsdelivr.net/gh/TangfanOVO/fuyue-kaomoji-drawer@v0.5.0/dist/standalone.js"></script>
+<script>FuyueKaomoji.mount("#kaomoji-drawer", { input: "#message" });</script>
+```
+
+脚本已经自带 React、组件和样式，不会再要求页面自己拼 CDN 依赖或 import map；点击颜文字会插入当前光标处并触发标准 `input` 事件。完整可运行页面见 [`examples/standalone.html`](./examples/standalone.html)。若宿主不是输入框，也可传 `onInsert(value)`，或监听容器的 `fuyue-kaomoji-insert` 事件。
 
 ## 精选库订阅
 
@@ -71,7 +84,7 @@ MCP 不会模拟点击抽屉。AI 调用 `kaomoji_pick` 后会得到一个颜文
 先全局安装固定版本：
 
 ```bash
-npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz
+npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz
 ```
 
 再在支持 stdio MCP 的客户端里增加：
@@ -93,7 +106,7 @@ npm install -g https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/t
   "mcpServers": {
     "kaomoji": {
       "command": "npx",
-      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.4.3.tar.gz"]
+      "args": ["-y", "https://github.com/TangfanOVO/fuyue-kaomoji-drawer/archive/refs/tags/v0.5.0.tar.gz"]
     }
   }
 }
@@ -130,13 +143,15 @@ React drawer ── KaomojiRepository ── shared REST/SQLite/JSON bridge
 import type { KaomojiRepository } from "@fuyue/kaomoji-drawer";
 
 const repository: KaomojiRepository = {
-  list: () => fetch("/api/kaomoji").then((response) => response.json()).then((data) => data.items),
+  list: () => fetch("/api/kaomoji").then((response) => response.json()).then((data) => [...data.items]),
   upsert: (value, categories, label) => request("/api/kaomoji", { method: "POST", body: { value, categories, label } }),
   remove: (value) => request(`/api/kaomoji/${encodeURIComponent(value)}`, { method: "DELETE" }),
   markUsed: (value) => request("/api/kaomoji/use", { method: "POST", body: { value } }),
   setFavorite: (value, favorite) => request("/api/kaomoji/favorite", { method: "POST", body: { value, favorite } }),
 };
 ```
+
+`list()` 每次都应返回一个新数组；组件据此可靠刷新收藏、频率和删除后的界面。内置 `localStorage` 与 JSON repository 已遵守这项约定。
 
 如果后端还有自动抓取候选箱，再实现可选的 `KaomojiReviewRepository` 并传给 `reviewRepository`。抽屉会显示“不收 / 收原版 / 收兼容版”，同一枚颜文字可用中文逗号、英文逗号、顿号或斜杠同时归入多个分类。
 

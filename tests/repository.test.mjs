@@ -7,12 +7,22 @@ import test from "node:test";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { createFileKaomojiRepository } from "../dist/file-repository.js";
-import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, readKaomojiCatalogSyncState, selectDiverseKaomoji, shouldAutomaticallySync, splitKaomojiCategories, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "../dist/index.js";
+import { analyzeKaomoji, createLocalKaomojiRepository, defaultKaomojiItems, initialKaomojiRenderLimit, normalizeKaomoji, normalizeKaomojiCategories, rankKaomojiCategories, readKaomojiCatalogSyncState, selectDiverseKaomoji, shouldAutomaticallySync, splitKaomojiCategories, syncKaomojiCatalog, writeKaomojiCatalogSyncState } from "../dist/index.js";
 
 test("installs from GitHub without requiring a local TypeScript compiler", async () => {
   const packageJson = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   assert.equal(packageJson.scripts?.prepare, undefined);
   assert.ok(packageJson.files.includes("dist"));
+  assert.ok(packageJson.files.includes("examples"));
+});
+
+test("ships a self-contained plain HTML entry and bounds the initial render", async () => {
+  const bundle = await readFile(new URL("../dist/standalone.js", import.meta.url), "utf8");
+  const example = await readFile(new URL("../examples/standalone.html", import.meta.url), "utf8");
+  assert.match(bundle, /FuyueKaomoji/);
+  assert.ok(bundle.length > 100_000);
+  assert.match(example, /FuyueKaomoji\.mount/);
+  assert.equal(initialKaomojiRenderLimit, 96);
 });
 
 test("normalizes transport-only controls without changing the visible face", () => {
@@ -72,6 +82,7 @@ test("stores categories, favourites and hidden usage ranking locally", async () 
   await repository.markUsed("(test-b)");
   await repository.setFavorite("(test-a)", true);
   const items = await repository.list();
+  assert.notEqual(items, await repository.list());
   assert.equal(items[0].value, "(test-a)");
   assert.deepEqual(items[0].categories, ["猫猫", "开心"]);
   assert.equal(items.find((item) => item.value === "(test-b)")?.useCount, 1);
@@ -167,6 +178,7 @@ test("persists a private file library atomically", async (context) => {
   assert.deepEqual(item.categories, ["开心", "猫猫"]);
   await repository.setCategoryOrder?.(["猫猫", "开心"]);
   assert.deepEqual((JSON.parse(await readFile(file, "utf8"))).categoryOrder, ["猫猫", "开心"]);
+  assert.notEqual(await repository.list(), await repository.list());
   const defaultValue = (await repository.list())[0].value;
   await repository.remove(defaultValue);
   assert.equal((await repository.list()).some((candidate) => candidate.value === defaultValue), false);
